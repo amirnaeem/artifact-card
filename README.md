@@ -7,7 +7,7 @@ Pick a level, show a name on the back, flip to explore. Accent tiles can optiona
 Inspired by [Artifact](https://artifact.news/).
 
 [![npm version](https://img.shields.io/npm/v/@amirnaeem/artifact-card.svg)](https://www.npmjs.com/package/@amirnaeem/artifact-card)
-[![license](https://img.shields.io/npm/l/@amirnaeem/artifact-card.svg)](./LICENSE)
+[![license](https://img.shields.io/github/license/amirnaeem/artifact-card.svg)](./LICENSE)
 [![node](https://img.shields.io/node/v/@amirnaeem/artifact-card.svg)](./package.json)
 [![demo](https://img.shields.io/badge/demo-GitHub%20Pages-black.svg)](https://amirnaeem.github.io/artifact-card/)
 
