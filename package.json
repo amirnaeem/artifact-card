@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/amirnaeem/artifact-card.git"
   },
-  "homepage": "https://github.com/amirnaeem/artifact-card#readme",
+  "homepage": "https://amirnaeem.github.io/artifact-card/",
   "bugs": {
     "url": "https://github.com/amirnaeem/artifact-card/issues"
   },
@@ -45,6 +45,7 @@
   "scripts": {
     "dev": "vite --config demo/vite.config.ts",
     "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "build:demo": "vite build --config demo/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check": "npm run typecheck && tsx checks/grid.check.ts && tsx checks/paint.check.ts",
     "prepublishOnly": "npm run check && npm run build"

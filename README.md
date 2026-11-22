@@ -6,9 +6,12 @@ Pick a level, show a name on the back, flip to explore. Accent tiles can optiona
 
 Inspired by [Artifact](https://artifact.news/).
 
-[![npm version](https://img.shields.io/npm/v/@amirnaeem/artifact-card.svg)](https://www.npmjs.com/package/@amirnaeem/artifact-card)
-[![license](https://img.shields.io/npm/l/@amirnaeem/artifact-card.svg)](./LICENSE)
-[![node](https://img.shields.io/node/v/@amirnaeem/artifact-card.svg)](./package.json)
+[![version](https://img.shields.io/badge/version-0.1.0-blue.svg)](./package.json)
+[![license](https://img.shields.io/github/license/amirnaeem/artifact-card.svg)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](./package.json)
+[![demo](https://img.shields.io/badge/demo-GitHub%20Pages-black.svg)](https://amirnaeem.github.io/artifact-card/)
+
+**Demo:** [amirnaeem.github.io/artifact-card](https://amirnaeem.github.io/artifact-card/)
 
 ---
 
@@ -191,7 +194,8 @@ npm install
 | `npm run dev` | Demo at [http://localhost:5173](http://localhost:5173) |
 | `npm run check` | Typecheck + paint/grid self-checks |
 | `npm run typecheck` | Typecheck only |
-| `npm run build` | Emit `dist/` |
+| `npm run build` | Emit library `dist/` |
+| `npm run build:demo` | Build demo for GitHub Pages |
 
 `prepublishOnly` runs `check` then `build` before publish.
 

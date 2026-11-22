@@ -7,6 +7,8 @@ const root = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root,
+  // Relative base so GitHub Pages (/artifact-card/) and local preview both work.
+  base: "./",
   plugins: [react()],
   resolve: {
     alias: [
@@ -19,6 +21,10 @@ export default defineConfig({
         replacement: resolve(root, "../src/index.ts"),
       },
     ],
+  },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
   },
   server: {
     port: 5173,
