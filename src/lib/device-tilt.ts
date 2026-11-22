@@ -1,4 +1,4 @@
-/** Phone orientation for RankCard / ProceduralCard. Baseline is frozen so held tilt sticks. */
+/** Phone orientation for the GL card. Baseline is frozen so held tilt sticks. */
 
 export type TiltSample = { x: number; y: number }; // -1..1 yaw/pitch from resting pose
 
