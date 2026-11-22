@@ -1,0 +1,86 @@
+{
+  "name": "@amirnaeem/artifact-card",
+  "version": "0.1.0",
+  "description": "Themeable reading-level profile card with GLTF glass shell and flat SVG faces.",
+  "license": "MIT",
+  "author": "Amir Naeem",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amirnaeem/artifact-card.git"
+  },
+  "homepage": "https://github.com/amirnaeem/artifact-card#readme",
+  "bugs": {
+    "url": "https://github.com/amirnaeem/artifact-card/issues"
+  },
+  "keywords": [
+    "react",
+    "card",
+    "three.js",
+    "gltf",
+    "profile-card",
+    "level-card"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./package.json": "./package.json"
+  },
+  "style": "./dist/styles.css",
+
+  "scripts": {
+    "dev": "vite --config demo/vite.config.ts",
+    "demo": "vite --config demo/vite.config.ts",
+    "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "check": "tsc -p tsconfig.json --noEmit && tsx checks/grid.check.ts && tsx checks/paint.check.ts",
+    "prepublishOnly": "npm run check && npm run build"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "three": "^0.160.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    },
+    "react-dom": {
+      "optional": false
+    },
+    "three": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.187.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "^0.187.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5",
+    "vite-plugin-static-copy": "^2.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

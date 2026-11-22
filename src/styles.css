@@ -1,0 +1,244 @@
+/* LevelCard: GLTF host + flat SVG faces (lab / WebGL fallback). */
+
+.level-card__wrap {
+  position: relative;
+  display: grid;
+  justify-items: stretch;
+  width: 100%;
+}
+
+.level-card__wrap--mini {
+  width: var(--level-card-size, 56px);
+  height: var(--level-card-size, 56px);
+  gap: 0;
+}
+
+.level-card--mini {
+  --level-card-size: 56px;
+  width: var(--level-card-size);
+  height: var(--level-card-size);
+}
+
+.level-card--mini .level-card__stage,
+.level-card--mini .level-card__side--solo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.level-card--mini .level-card__side {
+  border-radius: 10px;
+}
+
+.level-card--mini .level-card__tile {
+  pointer-events: none;
+}
+
+.level-card__wrap > .rankcard {
+  width: 100%;
+  height: 440px; /* RankCard stage — taller canvas clips L/R */
+}
+
+.level-card__actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+.level-card__actions > * { pointer-events: auto; }
+
+.level-card {
+  --level-card-size: 320px;
+  position: relative;
+  width: var(--level-card-size);
+  height: var(--level-card-size);
+  user-select: none;
+}
+
+.level-card--flat {
+  height: var(--level-card-size);
+}
+
+.level-card--flat .level-card__stage {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+}
+
+.level-card__stage {
+  position: absolute;
+  inset: 0;
+}
+
+.level-card__side {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #050505;
+}
+
+.level-card__side--solo {
+  position: relative;
+  transform: none;
+}
+
+.level-card__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.level-card__tile {
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: auto;
+  transition:
+    transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1),
+    filter 0.18s ease;
+}
+
+.level-card__tile--fun {
+  animation: level-card-tile-pop 0.7s cubic-bezier(0.34, 1.55, 0.64, 1) both;
+  animation-delay: var(--tile-delay, 0ms);
+}
+
+.level-card__tile--carve {
+  animation:
+    level-card-tile-pop 0.7s cubic-bezier(0.34, 1.55, 0.64, 1) both,
+    level-card-tile-carve 0.55s cubic-bezier(0.55, 0.05, 0.3, 1) forwards;
+  animation-delay: var(--tile-delay, 0ms), var(--carve-delay, 900ms);
+  pointer-events: none;
+}
+
+.level-card__tile:hover {
+  transform: scale(1.55) rotate(var(--tile-wobble, 0deg));
+  filter: brightness(1.15) saturate(1.1);
+}
+
+.level-card__mark--spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: level-card-mark-spin 10s linear infinite;
+}
+
+@keyframes level-card-tile-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.15) rotate(calc(var(--tile-wobble, 0deg) * -3));
+    filter: brightness(2);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.22) rotate(var(--tile-wobble, 0deg));
+  }
+  75% {
+    transform: scale(0.92) rotate(calc(var(--tile-wobble, 0deg) * -0.4));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes level-card-tile-carve {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.05) rotate(calc(var(--tile-wobble, 0deg) * 4));
+  }
+}
+
+@keyframes level-card-mark-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-card__tile,
+  .level-card__tile--fun,
+  .level-card__tile--carve,
+  .level-card__mark--spin {
+    animation: none !important;
+  }
+  .level-card__tile--carve { opacity: 0; }
+  .level-card__tile:hover { transform: none; }
+}
+
+.level-card--intensity-0 .level-card__tile,
+.level-card--intensity-0 .level-card__tile--fun,
+.level-card--intensity-0 .level-card__tile--carve,
+.level-card--intensity-0 .level-card__mark--spin {
+  animation: none !important;
+}
+
+.level-card--intensity-0 .level-card__tile--carve { opacity: 0; }
+.level-card--intensity-0 .level-card__tile:hover { transform: scale(1.2); }
+
+
+/* Host chrome (was app globals) */
+.rankcard {
+  height: 440px;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  touch-action: pan-y;
+  position: relative;
+}
+.rankcard::before {
+  content: "";
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 22px;
+  height: 26px;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0));
+  filter: blur(5px);
+  pointer-events: none;
+}
+.rankcard canvas {
+  position: relative;
+  max-width: 100%;
+}
+.iconbtn {
+  --hit: 44px;
+  width: var(--hit);
+  height: var(--hit);
+  min-width: var(--hit);
+  min-height: var(--hit);
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  border-radius: 10px;
+  touch-action: manipulation;
+  color: inherit;
+}
+.iconbtn:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.iconbtn:active {
+  transform: scale(0.92);
+}
+.rankflip {
+  color: #666;
+}
+.rankflip[aria-pressed="true"] {
+  color: #111;
+}
+.level-card__actions .rankflip {
+  background: color-mix(in srgb, #fff 72%, transparent);
+  backdrop-filter: blur(8px);
+}
