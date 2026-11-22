@@ -9,10 +9,16 @@ export default defineConfig({
   root,
   plugins: [react()],
   resolve: {
-    alias: {
-      "@amirnaeem/artifact-card": resolve(root, "../src/index.ts"),
-      "@amirnaeem/artifact-card/styles.css": resolve(root, "../src/styles.css"),
-    },
+    alias: [
+      {
+        find: "@amirnaeem/artifact-card/styles.css",
+        replacement: resolve(root, "../src/styles.css"),
+      },
+      {
+        find: "@amirnaeem/artifact-card",
+        replacement: resolve(root, "../src/index.ts"),
+      },
+    ],
   },
   server: {
     port: 5173,

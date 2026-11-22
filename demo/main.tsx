@@ -5,7 +5,7 @@ import {
   LEVEL_CARD_ORDER,
   type LevelCardName,
 } from "@amirnaeem/artifact-card";
-import "@amirnaeem/artifact-card/styles.css";
+import "../src/styles.css";
 import "./demo.css";
 
 function App() {
