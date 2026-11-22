@@ -32,7 +32,7 @@ type Api = {
   resetTilt: () => void;
 };
 
-/** RankCard GLTF shell + canvas-painted faces. */
+/** GLTF shell + canvas-painted faces. */
 export function LevelCardGl(props: LevelCardProps) {
   const resolved = resolveCard(props);
   const host = useRef<HTMLDivElement>(null);
@@ -134,11 +134,11 @@ export function LevelCardGl(props: LevelCardProps) {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.NeutralToneMapping;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      const size = () => {
-        const w = Math.max(200, el.clientWidth);
-        const h = Math.max(260, el.clientHeight || Math.round(Math.min(440, w * 1.18)));
-        return { w, h };
-      };
+      // Height comes from `.rankcard` CSS (--rankcard-h); don't hardcode px here.
+      const size = () => ({
+        w: Math.max(200, el.clientWidth),
+        h: Math.max(300, el.clientHeight),
+      });
       let { w, h } = size();
       renderer.setSize(w, h);
       renderer.domElement.setAttribute("aria-hidden", "true");

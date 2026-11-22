@@ -11,7 +11,7 @@ Inspired by [Artifact](https://artifact.news/).
 [![node](https://img.shields.io/node/v/@amirnaeem/artifact-card.svg)](./package.json)
 [![demo](https://img.shields.io/badge/demo-GitHub%20Pages-black.svg)](https://amirnaeem.github.io/artifact-card/)
 
-**Demo:** [amirnaeem.github.io/artifact-card](https://amirnaeem.github.io/artifact-card/)
+**Demo:** [amirnaeem.github.io/artifact-card](https://amirnaeem.github.io/artifact-card/) · **npm:** [@amirnaeem/artifact-card](https://www.npmjs.com/package/@amirnaeem/artifact-card)
 
 ---
 
@@ -197,9 +197,9 @@ npm install
 | `npm run build` | Emit library `dist/` |
 | `npm run build:demo` | Build demo for GitHub Pages |
 
-`prepublishOnly` runs `check` then `build` before publish.
+PRs go to `main` (CI must pass). `prepublishOnly` runs `check` then `build` before publish.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for PR workflow. Report vulnerabilities via [SECURITY.md](./SECURITY.md).
+See [CONTRIBUTING.md](./CONTRIBUTING.md) · [SECURITY.md](./SECURITY.md)
 
 ---
 
