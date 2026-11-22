@@ -1,6 +1,6 @@
 /** Fully themeable level-card primitive types. */
 
-/** Accent tile. Prefer `fill` (exact SVG color); `colorIndex` indexes theme.accents. */
+/** Accent tile. Prefer `fill` (exact color); `colorIndex` indexes theme.accents. */
 export type AccentCell = { c: number; r: number; colorIndex?: number; fill?: string };
 
 export type GridSpec = {
@@ -21,22 +21,13 @@ export type GridSpec = {
    * void/accent/body maps stay in content coordinates (0 .. contentCols-1).
    */
   padCols?: number;
-  /** Width of the SVG-derived puzzle region; defaults to cols - 2*padCols. */
+  /** Width of the puzzle content region; defaults to cols - 2*padCols. */
   contentCols?: number;
   /** Cells omitted from the mosaic (lower-right void, etc.). Content coords. */
   voidCells: Array<[number, number]>;
   accentCells: AccentCell[];
   /** Optional body fill override per cell; when set, primary is ignored for that cell. */
   bodyCells?: Array<{ c: number; r: number; fill: string }>;
-};
-
-export type AnimationSpec = {
-  enabled: boolean;
-  staggerMs: number;
-  accentPulse: boolean;
-  markSpin: boolean;
-  /** 0 = reduced / off, 1 = normal, 2 = high */
-  intensity: 0 | 1 | 2;
 };
 
 export type LevelCardTheme = {
@@ -69,7 +60,6 @@ export type LevelCardTheme = {
     metaWeight: number;
   };
   grid: GridSpec;
-  animation: AnimationSpec;
 };
 
 export type LevelCardPreset = {
@@ -85,7 +75,10 @@ export type LevelCardProps = {
   caption?: string;
   fullName?: string;
   memberSince?: string;
+  /** Back brand line; omitted when empty (no default). */
   brand?: string;
+  /** Draw the back asterisk mark. Default true. */
+  showMark?: boolean;
   side?: "front" | "back";
   /** Mosaic-only face (no title/caption); cropped to the tile grid. */
   mini?: boolean;

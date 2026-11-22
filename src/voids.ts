@@ -1,6 +1,5 @@
 /**
- * Puzzle voids extracted from reference badge SVGs (14×15 grid).
- * Matches the tetris cut-outs in image-front-*.svg.
+ * Puzzle voids for the 14×15 content grid (tetris cut-outs per level).
  */
 
 /** Shared lower-mid puzzle (Beginner / Learner / Seeker). */
@@ -43,7 +42,7 @@ export const VOID_SAVANT: Array<[number, number]> = [
   [2, 12], [3, 12], [4, 12], [5, 12],
 ];
 
-/** Prefer `SAGE_VOIDS` / `ORACLE_VOIDS` from svg-fills.ts (source of truth). */
+/** Prefer fills module for Sage / Oracle voids. */
 export { SAGE_VOIDS as VOID_SAGE, ORACLE_VOIDS as VOID_ORACLE } from "./svg-fills";
 
 /**

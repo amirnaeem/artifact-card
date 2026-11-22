@@ -1,16 +1,9 @@
+/** Public API — keep this surface small for consumers. */
+
 export { LevelCard } from "./LevelCard";
 export { LevelCardFace } from "./LevelCardFace";
 export { LevelCardBack } from "./LevelCardBack";
-export { Asterisk } from "./Asterisk";
-export { BACK_CX, paintBack, paintFace, buildFaceModel, gltfFaceGrid } from "./paint";
-export {
-  buildCells,
-  contentPad,
-  gridMetrics,
-  paddedVoids,
-  scatterFills,
-  scatterFillsInContent,
-} from "./grid";
+
 export { defaultTheme, mergeTheme } from "./theme";
 export { resolveCard } from "./resolve";
 export {
@@ -19,15 +12,10 @@ export {
   getPreset,
 } from "./presets";
 export type { LevelCardName } from "./presets";
-export {
-  GRID_BASE,
-  VOID_PUZZLE_BR,
-  VOID_EXPLORER,
-  VOID_SCHOLAR,
-  VOID_SAVANT,
-  VOID_SAGE,
-  VOID_ORACLE,
-} from "./voids";
+
+export { CARD_GLTF_URL } from "./assets";
+export { paintBack, paintFace, buildFaceModel } from "./paint";
+
 export type {
   LevelCardProps,
   LevelCardTheme,
@@ -35,6 +23,4 @@ export type {
   GridSpec,
   GridCell,
   AccentCell,
-  AnimationSpec,
 } from "./types";
-export { CARD_GLTF_URL, badgeFrontUrl, BADGE_BACK_URL } from "./assets";

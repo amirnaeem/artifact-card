@@ -12,7 +12,6 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         { src: "src/assets/card", dest: "assets" },
-        { src: "src/assets/badges", dest: "assets" },
         { src: "src/styles.css", dest: "." },
       ],
     }),
@@ -33,8 +32,10 @@ export default defineConfig({
         /^three\//,
       ],
     },
+    // Maps stay local for debugging; omitted from npm via package.json "files".
     sourcemap: true,
     emptyOutDir: true,
     assetsInlineLimit: 0,
+    minify: "esbuild",
   },
 });

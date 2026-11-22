@@ -4,7 +4,7 @@ import { LevelCardGl } from "./LevelCardGl";
 import { resolveCard } from "./resolve";
 import type { LevelCardProps } from "./types";
 
-/** GLTF glass by default; `side` / `mini` for flat SVG (lab, thumbs). */
+/** GLTF glass by default; `side` / `mini` for flat canvas faces (lab, thumbs). */
 export function LevelCard(props: LevelCardProps) {
   const resolved = resolveCard(props);
   const flat = props.mini || props.side === "front" || props.side === "back";
@@ -17,22 +17,18 @@ export function LevelCard(props: LevelCardProps) {
       <div
         className={[
           "level-card__wrap",
+          "level-card__wrap--flat",
           props.mini ? "level-card__wrap--mini" : "",
           props.className,
         ]
           .filter(Boolean)
           .join(" ")}
+        style={wrapStyle}
       >
         <div
-          className={[
-            "level-card",
-            "level-card--flat",
-            props.mini ? "level-card--mini" : "",
-            resolved.theme.animation.intensity === 0 ? "level-card--intensity-0" : "",
-          ]
+          className={["level-card", "level-card--flat", props.mini ? "level-card--mini" : ""]
             .filter(Boolean)
             .join(" ")}
-          style={wrapStyle}
         >
           <div className="level-card__stage">
             <div className="level-card__side level-card__side--solo">
@@ -43,6 +39,7 @@ export function LevelCard(props: LevelCardProps) {
                   caption={resolved.caption}
                   level={props.level}
                   mini={props.mini}
+                  size={size}
                 />
               ) : (
                 <LevelCardBack
@@ -50,6 +47,8 @@ export function LevelCard(props: LevelCardProps) {
                   brand={resolved.brand}
                   fullName={resolved.fullName}
                   memberSince={resolved.memberSince}
+                  showMark={resolved.showMark}
+                  size={size}
                 />
               )}
             </div>
@@ -61,5 +60,3 @@ export function LevelCard(props: LevelCardProps) {
 
   return <LevelCardGl {...props} />;
 }
-
-export default LevelCard;

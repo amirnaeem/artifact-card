@@ -16,25 +16,40 @@ function App() {
   return (
     <div className="demo">
       <header className="demo__header">
-        <h1>@amirnaeem/artifact-card</h1>
-        <p>GLTF glass shell · flat SVG faces · theme presets</p>
+        <h1>Artifact Card</h1>
+        <p>
+          Themeable reading-level profile card — GLTF glass shell, canvas faces,
+          and level presets from Beginner to Oracle.
+        </p>
       </header>
 
-      <label className="demo__control">
-        Level
-        <select
-          value={level}
-          onChange={(e) => setLevel(e.target.value as LevelCardName)}
-        >
+      <div
+        className="demo__panel demo__control"
+        role="group"
+        aria-labelledby="demo-level-label"
+      >
+        <span id="demo-level-label" className="demo__control-label">
+          Level
+        </span>
+        <div className="demo__levels">
           {LEVEL_CARD_ORDER.map((name) => (
-            <option key={name} value={name}>
+            <button
+              key={name}
+              type="button"
+              className={
+                name === level ? "demo__level demo__level--active" : "demo__level"
+              }
+              aria-pressed={name === level}
+              onClick={() => setLevel(name)}
+            >
               {name}
-            </option>
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
 
-      <section className="demo__stage" aria-label="3D card">
+      <section className="demo__panel demo__stage" aria-label="3D card">
+        <span className="demo__stage-label">Glass shell</span>
         <LevelCard
           level={level}
           fullName="Ada Lovelace"
@@ -46,16 +61,37 @@ function App() {
         {msg ? <p className="demo__msg">{msg}</p> : null}
       </section>
 
-      <section className="demo__row" aria-label="Flat faces">
-        <LevelCard level={level} side="front" size={220} />
-        <LevelCard
-          level={level}
-          side="back"
-          size={220}
-          fullName="Ada Lovelace"
-          memberSince="2023"
-        />
-        <LevelCard level={level} mini size={72} />
+      <section className="demo__panel demo__labs" aria-label="Flat faces">
+        <header className="demo__labs-head">
+          <h2>Flat faces</h2>
+          <p>Same canvas painters as the glass textures — front, back, and mini.</p>
+        </header>
+        <div className="demo__row">
+          <figure className="demo__sample">
+            <div className="demo__sample-slot">
+              <LevelCard level={level} side="front" size={200} />
+            </div>
+            <figcaption>Front</figcaption>
+          </figure>
+          <figure className="demo__sample">
+            <div className="demo__sample-slot">
+              <LevelCard
+                level={level}
+                side="back"
+                size={200}
+                fullName="Ada Lovelace"
+                memberSince="2023"
+              />
+            </div>
+            <figcaption>Back</figcaption>
+          </figure>
+          <figure className="demo__sample">
+            <div className="demo__sample-slot">
+              <LevelCard level={level} mini size={72} />
+            </div>
+            <figcaption>Mini</figcaption>
+          </figure>
+        </div>
       </section>
     </div>
   );

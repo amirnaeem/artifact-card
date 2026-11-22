@@ -1,8 +1,11 @@
 import type { LevelCardTheme } from "./types";
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+const SANS = 'var(--font-sans, "DM Sans", "Segoe UI", sans-serif)';
+const HEAD = 'var(--font-head, "Syne", "DM Sans", sans-serif)';
+const DISPLAY = 'var(--font-display, "Syne", "DM Sans", sans-serif)';
+const MONO = 'var(--font-mono, "IBM Plex Mono", ui-monospace, monospace)';
 
-/** Default theme in 2048×2048 user units; fonts inherit Artifact CSS variables when embedded in-app. */
+/** Default theme in 2048×2048 user units. Host apps can override via CSS vars. */
 export const defaultTheme: LevelCardTheme = {
   background: "#000000",
   primary: "#F0E013",
@@ -14,10 +17,10 @@ export const defaultTheme: LevelCardTheme = {
   nameColor: "#FEFEFE",
   metaColor: "#8F8E92",
   fonts: {
-    title: "var(--font-head)",
+    title: HEAD,
     caption: MONO,
-    brand: "var(--font-sans)",
-    name: "var(--font-display)",
+    brand: SANS,
+    name: DISPLAY,
     meta: MONO,
   },
   type: {
@@ -43,13 +46,6 @@ export const defaultTheme: LevelCardTheme = {
     contentCols: 14,
     voidCells: [],
     accentCells: [],
-  },
-  animation: {
-    enabled: true,
-    staggerMs: 22,
-    accentPulse: false,
-    markSpin: true,
-    intensity: 1,
   },
 };
 
@@ -84,10 +80,8 @@ function mergeOne(base: LevelCardTheme, patch: Partial<LevelCardTheme>): LevelCa
       (next as Record<string, unknown>)[key] = pv;
     }
   }
-  // Nested grid / fonts / type / animation need one more level when only partial keys passed
   if (patch.fonts) next.fonts = { ...base.fonts, ...patch.fonts };
   if (patch.type) next.type = { ...base.type, ...patch.type };
   if (patch.grid) next.grid = { ...base.grid, ...patch.grid };
-  if (patch.animation) next.animation = { ...base.animation, ...patch.animation };
   return next;
 }

@@ -1,7 +1,7 @@
 {
   "name": "@amirnaeem/artifact-card",
   "version": "0.1.0",
-  "description": "Themeable reading-level profile card with GLTF glass shell and flat SVG faces.",
+  "description": "Themeable reading-level profile card for React — GLTF glass shell with canvas-painted faces.",
   "license": "MIT",
   "author": "Amir Naeem",
   "repository": {
@@ -14,18 +14,21 @@
   },
   "keywords": [
     "react",
-    "card",
     "three.js",
     "gltf",
     "profile-card",
-    "level-card"
+    "level-card",
+    "canvas"
   ],
   "type": "module",
   "sideEffects": [
     "**/*.css"
   ],
   "files": [
-    "dist"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.css",
+    "dist/assets/**"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -39,29 +42,17 @@
     "./package.json": "./package.json"
   },
   "style": "./dist/styles.css",
-
   "scripts": {
     "dev": "vite --config demo/vite.config.ts",
-    "demo": "vite --config demo/vite.config.ts",
     "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
-    "check": "tsc -p tsconfig.json --noEmit && tsx checks/grid.check.ts && tsx checks/paint.check.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "npm run typecheck && tsx checks/grid.check.ts && tsx checks/paint.check.ts",
     "prepublishOnly": "npm run check && npm run build"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "three": "^0.160.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": false
-    },
-    "react-dom": {
-      "optional": false
-    },
-    "three": {
-      "optional": false
-    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

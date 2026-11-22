@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { rasterSvg } from "./lib/cardFace";
 import {
   attachDeviceTilt,
   needsMotionPermission,
@@ -7,7 +6,7 @@ import {
   wantsDeviceTilt,
 } from "./lib/device-tilt";
 import { CrosshairIcon, FlipIcon, PhoneIcon } from "./ActionIcons";
-import { badgeFrontUrl, CARD_GLTF_URL } from "./assets";
+import { CARD_GLTF_URL } from "./assets";
 import { LevelCardFace } from "./LevelCardFace";
 import { buildFaceModel, paintBack, paintFace } from "./paint";
 import { resolveCard } from "./resolve";
@@ -22,7 +21,7 @@ type Api = {
   resetTilt: () => void;
 };
 
-/** RankCard GLTF shell + LevelCard art (badge front, painted back). */
+/** RankCard GLTF shell + canvas-painted faces. */
 export function LevelCardGl(props: LevelCardProps) {
   const resolved = resolveCard(props);
   const host = useRef<HTMLDivElement>(null);
@@ -60,7 +59,13 @@ export function LevelCardGl(props: LevelCardProps) {
 
   useEffect(() => {
     api.current?.setIdentity();
-  }, [resolved.brand, resolved.fullName, resolved.memberSince, resolved.theme.background]);
+  }, [
+    resolved.brand,
+    resolved.fullName,
+    resolved.memberSince,
+    resolved.showMark,
+    resolved.theme.background,
+  ]);
 
   useEffect(() => {
     let disposed = false;
@@ -196,17 +201,9 @@ export function LevelCardGl(props: LevelCardProps) {
 
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      const paintFrontNow = async (level: string) => {
-        const badgeUrl = badgeFrontUrl(level);
-        const badge = badgeUrl ? await rasterSvg(badgeUrl, faceTexPx) : null;
-        if (disposed) return;
-        const ctx = faceCanvas.getContext("2d");
-        if (badge && ctx) {
-          ctx.drawImage(badge, 0, 0, faceTexPx, faceTexPx);
-        } else {
-          const r = resolveCard({ ...latest.current, level });
-          paintFace(faceCanvas, buildFaceModel(r.theme, r.title, r.caption, level));
-        }
+      const paintFrontNow = (level: string) => {
+        const r = resolveCard({ ...latest.current, level });
+        paintFace(faceCanvas, buildFaceModel(r.theme, r.title, r.caption, level));
         faceTex.needsUpdate = true;
       };
 
@@ -217,11 +214,12 @@ export function LevelCardGl(props: LevelCardProps) {
           brand: r.brand,
           fullName: r.fullName,
           memberSince: r.memberSince,
+          showMark: r.showMark,
         });
         backTex.needsUpdate = true;
       };
 
-      await paintFrontNow(levelName);
+      paintFrontNow(levelName);
       paintBackNow();
       if (disposed) return;
 
@@ -259,7 +257,7 @@ export function LevelCardGl(props: LevelCardProps) {
 
       api.current = {
         setLevel: (name, spin) => {
-          void paintFrontNow(name).then(() => wake());
+          paintFrontNow(name);
           if (spin && !reduce) {
             pendingLevel = name;
             spinLeft = Math.PI * 2;

@@ -53,7 +53,7 @@ function resolveContentFill(
   return bodyMap.get(key) ?? primary;
 }
 
-/** Map a pad column onto a mirrored content column so side tiles reuse SVG colors. */
+/** Map a pad column onto a mirrored content column so side tiles reuse content colors. */
 function padMirrorContentCol(c: number, pad: number, contentCols: number): number {
   if (c < pad) return Math.min(contentCols - 1, Math.max(0, pad - 1 - c));
   return Math.min(contentCols - 1, Math.max(0, 2 * contentCols + pad - 1 - c));
@@ -133,7 +133,7 @@ export function buildCells(
             accentMap,
           ) ?? primary;
       } else {
-        // Side pads: mirror SVG content colors outward (no flat primary strips)
+        // Side pads: mirror content colors outward (no flat primary strips)
         fill = padFill(c, r, pad, contentCols, primary, accents, voidSet, bodyMap, accentMap);
       }
 

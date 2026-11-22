@@ -1,4 +1,4 @@
-/** Auto-derived tile fills from reference SVGs (incl. Oracle gradient mid-stops). */
+/** Per-level tile fills / voids (incl. Oracle gradient mid-stops). */
 
 export type FillCell = { c: number; r: number; fill: string };
 

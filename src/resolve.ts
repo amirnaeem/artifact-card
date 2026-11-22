@@ -9,6 +9,7 @@ export type ResolvedCard = {
   brand: string;
   fullName: string;
   memberSince: string;
+  showMark: boolean;
 };
 
 /** Resolve preset + prop overrides into a concrete render model. */
@@ -19,8 +20,9 @@ export function resolveCard(props: LevelCardProps): ResolvedCard {
     theme,
     title: props.title ?? preset?.name ?? props.level ?? "Learner",
     caption: props.caption ?? preset?.caption ?? "",
-    brand: props.brand ?? "ARTIFACT",
+    brand: props.brand ?? "",
     fullName: props.fullName ?? "",
     memberSince: props.memberSince ?? "",
+    showMark: props.showMark !== false,
   };
 }

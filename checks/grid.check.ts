@@ -80,8 +80,6 @@ const scattered = scatterFillsInContent(
 );
 assert(scattered.length === 10, "Beginner scatter places 10");
 
-assert(learner.theme.animation.accentPulse === false, "no accent blink by default");
-
 for (const name of LEVEL_CARD_ORDER) {
   assert(LEVEL_CARD_PRESETS[name], `missing preset ${name}`);
   const r = resolveCard({ level: name });
