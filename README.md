@@ -195,6 +195,8 @@ npm install
 
 `prepublishOnly` runs `check` then `build` before publish.
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for PR workflow. Report vulnerabilities via [SECURITY.md](./SECURITY.md).
+
 ---
 
 ## License
