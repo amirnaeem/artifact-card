@@ -128,13 +128,13 @@
 
 .level-card__wrap > .rankcard {
   width: 100%;
-  height: 440px;
+  height: var(--rankcard-h, clamp(300px, 118vw, 440px));
 }
 
 .level-card__actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: max(6px, env(safe-area-inset-top, 0px));
+  right: max(6px, env(safe-area-inset-right, 0px));
   z-index: 2;
   display: flex;
   gap: 4px;
@@ -148,7 +148,8 @@
 }
 
 .rankcard {
-  height: 440px;
+  --rankcard-h: clamp(300px, 118vw, 440px);
+  height: var(--rankcard-h);
   width: 100%;
   display: grid;
   place-items: center;
@@ -170,6 +171,8 @@
 
 .rankcard canvas {
   position: relative;
+  width: 100% !important;
+  height: 100% !important;
   max-width: 100%;
 }
 
