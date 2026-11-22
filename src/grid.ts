@@ -193,3 +193,18 @@ export function scatterFillsInContent(
 ): Array<{ c: number; r: number; fill: string }> {
   return scatterFills(fills, voidCells, contentCols, rows, rng, 0);
 }
+
+/** Hard step (~GIF): reshuffle accent fills onto non-void content cells. */
+export const ACCENT_FLICKER_MS = 400;
+
+export function stepAccentCells(
+  fills: string[],
+  voidCells: Array<[number, number]>,
+  contentCols: number,
+  rows: number,
+  rng: () => number = Math.random,
+): AccentCell[] {
+  return scatterFillsInContent(fills, voidCells, contentCols, rows, rng).map(
+    ({ c, r, fill }) => ({ c, r, fill }),
+  );
+}

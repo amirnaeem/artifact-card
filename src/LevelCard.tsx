@@ -39,6 +39,7 @@ export function LevelCard(props: LevelCardProps) {
                   caption={resolved.caption}
                   level={props.level}
                   mini={props.mini}
+                  flicker={props.flicker}
                   size={size}
                 />
               ) : (

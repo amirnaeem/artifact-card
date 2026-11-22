@@ -7,11 +7,22 @@ import {
 } from "./lib/device-tilt";
 import { CrosshairIcon, FlipIcon, PhoneIcon } from "./ActionIcons";
 import { CARD_GLTF_URL } from "./assets";
+import { ACCENT_FLICKER_MS, contentPad, stepAccentCells } from "./grid";
 import { LevelCardFace } from "./LevelCardFace";
-import { buildFaceModel, paintBack, paintFace } from "./paint";
+import {
+  buildFaceModel,
+  flickerFillsFor,
+  paintBack,
+  paintFaceChrome,
+  paintFaceMosaic,
+} from "./paint";
 import { resolveCard } from "./resolve";
 import type { LevelCardProps } from "./types";
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+/** Hairline lifts above glass — embossed metal, not floating decks. */
+const LAYER_MOSAIC_WORLD = 0.006;
+const LAYER_CHROME_WORLD = 0.014;
 
 type Api = {
   setLevel: (name: string, spin: boolean) => void;
@@ -39,6 +50,8 @@ export function LevelCardGl(props: LevelCardProps) {
   const [motionOn, setMotionOn] = useState(false);
   const api = useRef<Api | null>(null);
   const levelName = props.level ?? resolved.title;
+  const flickerOn = !!props.flicker;
+  const flickerRef = useRef(flickerOn);
 
   useEffect(() => {
     latest.current = props;
@@ -54,8 +67,16 @@ export function LevelCardGl(props: LevelCardProps) {
   }, [flipped]);
 
   useEffect(() => {
+    flickerRef.current = flickerOn;
     api.current?.setLevel(levelName, false);
-  }, [levelName]);
+  }, [
+    levelName,
+    flickerOn,
+    resolved.title,
+    resolved.caption,
+    resolved.theme.primary,
+    resolved.theme.background,
+  ]);
 
   useEffect(() => {
     api.current?.setIdentity();
@@ -182,10 +203,14 @@ export function LevelCardGl(props: LevelCardProps) {
       let t = 0;
 
       const faceTexPx = Math.min(renderer.capabilities.maxTextureSize, 1024);
-      const faceCanvas = document.createElement("canvas");
-      faceCanvas.width = faceCanvas.height = faceTexPx;
-      const backCanvas = document.createElement("canvas");
-      backCanvas.width = backCanvas.height = faceTexPx;
+      const mkCanvas = () => {
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = faceTexPx;
+        return cv;
+      };
+      const mosaicCanvas = mkCanvas();
+      const chromeCanvas = mkCanvas();
+      const backCanvas = mkCanvas();
 
       const mkTex = (cv: HTMLCanvasElement) => {
         const tex = new THREE.CanvasTexture(cv);
@@ -196,15 +221,38 @@ export function LevelCardGl(props: LevelCardProps) {
         tex.minFilter = THREE.LinearMipmapLinearFilter;
         return tex;
       };
-      const faceTex = mkTex(faceCanvas);
+      const mosaicTex = mkTex(mosaicCanvas);
+      const chromeTex = mkTex(chromeCanvas);
       const backTex = mkTex(backCanvas);
 
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let currentLevel = levelName;
+      const raised: InstanceType<typeof THREE.Mesh>[] = [];
+
+      const paintFrontMosaic = (level: string) => {
+        const r = resolveCard({ ...latest.current, level });
+        const fills = flickerRef.current ? flickerFillsFor(r.theme, level) : null;
+        const { contentCols } = contentPad(r.theme.grid);
+        const accentCells = fills
+          ? stepAccentCells(fills, r.theme.grid.voidCells, contentCols, r.theme.grid.rows)
+          : undefined;
+        paintFaceMosaic(
+          mosaicCanvas,
+          buildFaceModel(r.theme, r.title, r.caption, level, { accentCells }),
+        );
+        mosaicTex.needsUpdate = true;
+      };
+
+      const paintFrontChrome = (level: string) => {
+        const r = resolveCard({ ...latest.current, level });
+        paintFaceChrome(chromeCanvas, buildFaceModel(r.theme, r.title, r.caption, level));
+        chromeTex.needsUpdate = true;
+      };
 
       const paintFrontNow = (level: string) => {
-        const r = resolveCard({ ...latest.current, level });
-        paintFace(faceCanvas, buildFaceModel(r.theme, r.title, r.caption, level));
-        faceTex.needsUpdate = true;
+        currentLevel = level;
+        paintFrontMosaic(level);
+        paintFrontChrome(level);
       };
 
       const paintBackNow = () => {
@@ -221,19 +269,72 @@ export function LevelCardGl(props: LevelCardProps) {
 
       paintFrontNow(levelName);
       paintBackNow();
+      let flickerTimer = 0;
       if (disposed) return;
 
-      if (faces.front) {
-        const mat = faces.front.material as import("three").MeshStandardMaterial;
+      const faceOutward = (mesh: InstanceType<typeof THREE.Mesh>) => {
+        const attr = mesh.geometry.getAttribute("normal");
+        return new THREE.Vector3(attr.getX(0), attr.getY(0), attr.getZ(0)).normalize();
+      };
+
+      const flushGlass = (mesh: InstanceType<typeof THREE.Mesh>) => {
+        const mat = mesh.material as import("three").MeshStandardMaterial;
         mat.map?.dispose();
-        mat.map = faceTex;
+        mat.map = null;
+        mat.color.set("#050505");
+        mat.transparent = false;
         mat.needsUpdate = true;
+      };
+
+      /** Hairline emboss deck above glass. Geometry is shared with the face — don't dispose it. */
+      const raiseDeck = (
+        face: InstanceType<typeof THREE.Mesh>,
+        map: InstanceType<typeof THREE.CanvasTexture>,
+        liftWorld: number,
+        opts: { name: string; transparent?: boolean; renderOrder: number },
+      ) => {
+        const n = faceOutward(face);
+        const mat = new THREE.MeshStandardMaterial({
+          map,
+          transparent: !!opts.transparent,
+          depthWrite: !opts.transparent,
+          roughness: opts.transparent ? 0.18 : 0.28,
+          metalness: opts.transparent ? 0.85 : 0.62,
+          envMapIntensity: opts.transparent ? 1.35 : 1.15,
+          side: THREE.FrontSide,
+          polygonOffset: true,
+          polygonOffsetFactor: opts.transparent ? -4 : -2,
+          polygonOffsetUnits: opts.transparent ? -4 : -2,
+        });
+        const deck = new THREE.Mesh(face.geometry, mat);
+        deck.name = opts.name;
+        deck.position.copy(face.position).addScaledVector(n, liftWorld / fit);
+        deck.quaternion.copy(face.quaternion);
+        deck.scale.copy(face.scale);
+        deck.renderOrder = opts.renderOrder;
+        face.parent?.add(deck);
+        raised.push(deck);
+        return deck;
+      };
+
+      if (faces.front) {
+        flushGlass(faces.front);
+        raiseDeck(faces.front, mosaicTex, LAYER_MOSAIC_WORLD, {
+          name: "Fill-Front-Mosaic",
+          renderOrder: 1,
+        });
+        raiseDeck(faces.front, chromeTex, LAYER_CHROME_WORLD, {
+          name: "Fill-Front-Chrome",
+          transparent: true,
+          renderOrder: 2,
+        });
       }
       if (faces.back) {
-        const mat = faces.back.material as import("three").MeshStandardMaterial;
-        mat.map?.dispose();
-        mat.map = backTex;
-        mat.needsUpdate = true;
+        flushGlass(faces.back);
+        raiseDeck(faces.back, backTex, LAYER_CHROME_WORLD, {
+          name: "Fill-Back-Plate",
+          renderOrder: 1,
+        });
       }
 
       let spinLeft = 0;
@@ -421,10 +522,21 @@ export function LevelCardGl(props: LevelCardProps) {
       });
       ro.observe(el);
       cv.addEventListener("webglcontextlost", (e) => e.preventDefault());
+      if (!reduce) {
+        flickerTimer = window.setInterval(() => {
+          if (disposed || !onScreen || document.hidden || !flickerRef.current) return;
+          if (!flickerFillsFor(resolveCard({ ...latest.current, level: currentLevel }).theme, currentLevel)) {
+            return;
+          }
+          paintFrontMosaic(currentLevel);
+          wake();
+        }, ACCENT_FLICKER_MS);
+      }
       wake();
 
       cleanup = () => {
         cancelAnimationFrame(raf);
+        if (flickerTimer) window.clearInterval(flickerTimer);
         running = false;
         io.disconnect();
         ro.disconnect();
@@ -435,13 +547,20 @@ export function LevelCardGl(props: LevelCardProps) {
         cv.removeEventListener("pointerup", up);
         cv.removeEventListener("pointercancel", up);
         cv.removeEventListener("pointerleave", leave);
+        // Raised decks share face geometry — remove + dispose materials only.
+        for (const deck of raised) {
+          deck.parent?.remove(deck);
+          (deck.material as import("three").Material).dispose();
+        }
+        raised.length = 0;
         model.traverse((o) => {
           const m = o as import("three").Mesh;
           if (!m.isMesh) return;
           m.geometry.dispose();
           (Array.isArray(m.material) ? m.material : [m.material]).forEach((mt) => mt.dispose());
         });
-        faceTex.dispose();
+        mosaicTex.dispose();
+        chromeTex.dispose();
         backTex.dispose();
         envTex.dispose();
         pmrem.dispose();
@@ -466,6 +585,7 @@ export function LevelCardGl(props: LevelCardProps) {
             title={resolved.title}
             caption={resolved.caption}
             level={props.level}
+            flicker={props.flicker}
           />
         </div>
       </div>

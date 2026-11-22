@@ -1,8 +1,8 @@
 # @amirnaeem/artifact-card
 
-Themeable reading-level profile card for React.
+Themeable reading-level **award card** for React.
 
-Default render is a **GLTF glass shell** (Three.js). Front and back art are painted on canvas — the same painters power flat lab faces, mini thumbs, and the WebGL fallback.
+Pick a level, show a name on the back, flip to explore. Accent tiles can optionally flicker. Flat and mini variants use the same art.
 
 [![npm version](https://img.shields.io/npm/v/@amirnaeem/artifact-card.svg)](https://www.npmjs.com/package/@amirnaeem/artifact-card)
 [![license](https://img.shields.io/npm/l/@amirnaeem/artifact-card.svg)](./LICENSE)
@@ -48,6 +48,12 @@ export function Profile() {
 
 Tap or click the card to flip. For controlled flip: `flipped` + `onFlip`.
 
+Accent flicker is off by default:
+
+```tsx
+<LevelCard level="Savant" flicker fullName="Ada Lovelace" memberSince="2023" />
+```
+
 ### Vite
 
 Works out of the box with the install above.
@@ -77,7 +83,7 @@ const nextConfig = {
 export default nextConfig;
 ```
 
-GLTF and textures resolve from the published package via `import.meta.url` — you do **not** copy files into `public/`.
+Assets resolve from the package via `import.meta.url` — you do **not** copy files into `public/`.
 
 ---
 
@@ -85,7 +91,7 @@ GLTF and textures resolve from the published package via `import.meta.url` — y
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `level` | `string` | — | Preset name (`Learner`, `Scholar`, …) |
+| `level` | `string` | — | Award preset (`Learner`, `Scholar`, …) |
 | `theme` | `Partial<LevelCardTheme>` | — | Deep-merged over the level preset |
 | `title` | `string` | preset name | Front title |
 | `caption` | `string` | preset caption | Front caption |
@@ -93,8 +99,9 @@ GLTF and textures resolve from the published package via `import.meta.url` — y
 | `memberSince` | `string` | — | Back meta (skipped when empty) |
 | `brand` | `string` | `""` | Optional back brand line |
 | `showMark` | `boolean` | `true` | Back asterisk |
-| `side` | `"front" \| "back"` | — | Flat single face (no WebGL) |
+| `side` | `"front" \| "back"` | — | Flat single face |
 | `mini` | `boolean` | `false` | Mosaic-only thumb |
+| `flicker` | `boolean` | `false` | Animate accent tiles (Beginner→Savant; respects `prefers-reduced-motion`) |
 | `flipped` | `boolean` | — | Controlled flip |
 | `defaultFlipped` | `boolean` | `false` | Uncontrolled initial flip |
 | `onFlip` | `(flipped: boolean) => void` | — | Flip callback |
@@ -109,6 +116,21 @@ GLTF and textures resolve from the published package via `import.meta.url` — y
 <LevelCard level="Explorer" side="back" fullName="Ada" memberSince="2023" />
 <LevelCard level="Sage" mini size={56} />
 ```
+
+---
+
+## Award levels
+
+| Level | Caption |
+| --- | --- |
+| `Beginner` | Just Joined |
+| `Learner` | First Read |
+| `Seeker` | 10+ reads |
+| `Explorer` | 25+ reads |
+| `Scholar` | 50+ reads |
+| `Savant` | 100+ reads |
+| `Sage` | 250+ reads |
+| `Oracle` | 350+ reads |
 
 ---
 
@@ -127,11 +149,7 @@ GLTF and textures resolve from the published package via `import.meta.url` — y
 Merge order: `defaultTheme` ← level preset ← `theme` prop.  
 Arrays (`accents`, `voidCells`, …) replace wholesale.
 
-**Presets:** `Beginner` · `Learner` · `Seeker` · `Explorer` · `Scholar` · `Savant` · `Sage` · `Oracle`
-
 ### Fonts
-
-Canvas type uses CSS variables (with package fallbacks):
 
 | Variable | Role |
 | --- | --- |
@@ -149,12 +167,12 @@ Set them on `:root` (or a host wrapper) to match your product fonts.
 | Export | Purpose |
 | --- | --- |
 | `LevelCard` | Main component |
-| `LevelCardFace` / `LevelCardBack` | Standalone canvas faces |
+| `LevelCardFace` / `LevelCardBack` | Standalone faces |
 | `resolveCard` / `mergeTheme` / `defaultTheme` | Theme resolution |
 | `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `getPreset` | Presets |
-| `paintFace` / `paintBack` / `buildFaceModel` | Advanced canvas paint |
+| `paintFace` / `paintFaceMosaic` / `paintFaceChrome` / `paintBack` / `buildFaceModel` / `compositeFace` | Advanced paint |
 | `CARD_GLTF_URL` | Packaged shell URL |
-| Types | `LevelCardProps`, `LevelCardTheme`, … |
+| Types | `LevelCardProps`, `LevelCardTheme`, `LevelCardName`, … |
 
 ---
 
@@ -168,10 +186,10 @@ npm install
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Demo app at [http://localhost:5173](http://localhost:5173) |
+| `npm run dev` | Demo at [http://localhost:5173](http://localhost:5173) |
 | `npm run check` | Typecheck + paint/grid self-checks |
 | `npm run typecheck` | Typecheck only |
-| `npm run build` | Emit `dist/` (ESM, types, CSS, GLTF assets) |
+| `npm run build` | Emit `dist/` |
 
 `prepublishOnly` runs `check` then `build` before publish.
 

@@ -40,6 +40,8 @@
   height: 100%;
 }
 
+/* Flat + mini: side must fill the stage so absolute face canvases get a real box. */
+.level-card--flat .level-card__side--solo,
 .level-card--mini .level-card__stage,
 .level-card--mini .level-card__side--solo {
   position: absolute;
@@ -69,6 +71,7 @@
 .level-card--mini,
 .level-card--mini .level-card__stage,
 .level-card--mini .level-card__side,
+.level-card--mini .level-card__face-stack,
 .level-card--mini .level-card__canvas {
   border-radius: 8px;
 }
@@ -82,6 +85,45 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Mosaic under type — flicker only redraws the mosaic canvas. */
+.level-card__face-stack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #050505;
+}
+
+.level-card__face-stack .level-card__canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Flat lab: embossed metal — close to glass, light contact only. */
+.level-card__face-mosaic {
+  z-index: 0;
+}
+
+.level-card__face-chrome {
+  z-index: 1;
+  pointer-events: none;
+  filter:
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.45))
+    drop-shadow(0 -0.5px 0 rgba(255, 255, 255, 0.2));
+}
+
+.level-card__face-stack--mini .level-card__face-chrome {
+  filter: none;
+}
+
+.level-card--flat .level-card__side--solo {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 4px rgba(0, 0, 0, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.18);
 }
 
 .level-card__wrap > .rankcard {
