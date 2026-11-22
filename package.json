@@ -65,7 +65,7 @@
     "react-dom": "^19.3.1",
     "three": "^0.187.0",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
+    "typescript": "^7.0.2",
     "vite": "^6.3.5",
     "vite-plugin-static-copy": "^2.3.2"
   },
