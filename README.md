@@ -4,6 +4,8 @@ Themeable reading-level **award card** for React.
 
 Pick a level, show a name on the back, flip to explore. Accent tiles can optionally flicker. Flat and mini variants use the same art.
 
+Inspired by [Artifact](https://artifact.news/).
+
 [![npm version](https://img.shields.io/npm/v/@amirnaeem/artifact-card.svg)](https://www.npmjs.com/package/@amirnaeem/artifact-card)
 [![license](https://img.shields.io/npm/l/@amirnaeem/artifact-card.svg)](./LICENSE)
 [![node](https://img.shields.io/node/v/@amirnaeem/artifact-card.svg)](./package.json)
