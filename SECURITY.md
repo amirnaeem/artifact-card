@@ -4,7 +4,20 @@
 
 | Version | Supported |
 | --- | --- |
-| `0.x` on `main` | Yes |
+| `0.x` on `main` / latest npm | Yes |
+
+## Trust boundaries
+
+Treat these props as **application-controlled data** (or sanitize them server-side before passing them in):
+
+- Text: `title`, `caption`, `fullName`, `memberSince`, `brand`
+- Layout: `size`, `theme` (especially `theme.grid`)
+
+The library clamps `size` and grid dimensions and skips prototype-pollution keys in `mergeTheme`, but it does **not** HTML-sanitize strings (text is drawn with canvas `fillText` / React attributes). Do not feed raw untrusted user HTML into props.
+
+The GLTF shell URL is fixed inside the package — callers cannot load arbitrary remote models.
+
+Peer `three` versions are the consumer’s responsibility; this package is tested against recent `0.18x` releases within the declared peer range.
 
 ## Reporting a vulnerability
 

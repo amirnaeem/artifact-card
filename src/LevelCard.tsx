@@ -1,16 +1,17 @@
+import { clampCardSize } from "./lib/canvas";
 import { LevelCardBack } from "./LevelCardBack";
 import { LevelCardFace } from "./LevelCardFace";
 import { LevelCardGl } from "./LevelCardGl";
 import { resolveCard } from "./resolve";
 import type { LevelCardProps } from "./types";
 
-/** GLTF glass by default; `side` / `mini` for flat canvas faces (lab, thumbs). */
+/** GLTF shell by default; `side` / `mini` for flat canvas faces (lab, thumbs). */
 export function LevelCard(props: LevelCardProps) {
   const resolved = resolveCard(props);
   const flat = props.mini || props.side === "front" || props.side === "back";
 
   if (flat) {
-    const size = props.size ?? (props.mini ? 56 : 320);
+    const size = clampCardSize(props.size ?? (props.mini ? 56 : 320), props.mini ? 56 : 320);
     const wrapStyle = { ["--level-card-size" as string]: `${size}px` };
     const face = props.side !== "back";
     return (

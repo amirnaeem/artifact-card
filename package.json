@@ -1,6 +1,6 @@
 {
   "name": "@amirnaeem/artifact-card",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Themeable reading-level award card for React — 3D shell with canvas-painted faces.",
   "license": "MIT",
   "author": "Amir Naeem",
@@ -47,7 +47,7 @@
     "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
     "build:demo": "vite build --config demo/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "npm run typecheck && tsx checks/grid.check.ts && tsx checks/paint.check.ts",
+    "check": "npm run typecheck && tsx checks/grid.check.ts && tsx checks/paint.check.ts && tsx checks/security.check.ts",
     "prepublishOnly": "npm run check && npm run build"
   },
   "peerDependencies": {
