@@ -13,6 +13,17 @@ Inspired by [Artifact](https://artifact.news/).
 
 **Demo:** [amirnaeem.github.io/artifact-card](https://amirnaeem.github.io/artifact-card/) · **npm:** [@amirnaeem/artifact-card](https://www.npmjs.com/package/@amirnaeem/artifact-card)
 
+<p align="center">
+  <img src="assets/beginner-badge.png" alt="Beginner — Just Joined" width="120" />
+  <img src="assets/learner-badge.png" alt="Learner — First Read" width="120" />
+  <img src="assets/seeker-badge.png" alt="Seeker — 10+ reads" width="120" />
+  <img src="assets/explorer-badge.png" alt="Explorer — 25+ reads" width="120" />
+  <img src="assets/scholar-badge.png" alt="Scholar — 50+ reads" width="120" />
+  <img src="assets/savant-badge.png" alt="Savant — 100+ reads" width="120" />
+  <img src="assets/sage-badge.png" alt="Sage — 250+ reads" width="120" />
+  <img src="assets/oracle-badge.png" alt="Oracle — 350+ reads" width="120" />
+</p>
+
 ---
 
 ## Install
