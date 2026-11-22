@@ -134,7 +134,11 @@ export function LevelCardGl(props: LevelCardProps) {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.NeutralToneMapping;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      const size = () => ({ w: Math.max(240, el.clientWidth), h: 440 });
+      const size = () => {
+        const w = Math.max(200, el.clientWidth);
+        const h = Math.max(260, el.clientHeight || Math.round(Math.min(440, w * 1.18)));
+        return { w, h };
+      };
       let { w, h } = size();
       renderer.setSize(w, h);
       renderer.domElement.setAttribute("aria-hidden", "true");
@@ -142,7 +146,7 @@ export function LevelCardGl(props: LevelCardProps) {
       renderer.domElement.style.cursor = "grab";
       renderer.domElement.style.display = "block";
       renderer.domElement.style.width = "100%";
-      renderer.domElement.style.height = "440px";
+      renderer.domElement.style.height = "100%";
       el.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
