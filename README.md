@@ -10,6 +10,8 @@ Inspired by [Artifact](https://artifact.news/).
 [![license](https://img.shields.io/npm/l/@amirnaeem/artifact-card.svg)](./LICENSE)
 [![node](https://img.shields.io/node/v/@amirnaeem/artifact-card.svg)](./package.json)
 
+![Artifact Card demo](docs/demo.gif)
+
 ---
 
 ## Install
