@@ -1,22 +1,52 @@
-import { BACK_CX, buildFaceModel, gltfFaceGrid } from "../src/paint";
+import {
+  BACK_CX,
+  buildFaceModel,
+  faceLayout,
+  gltfFaceGrid,
+} from "../src/paint";
 import { resolveCard } from "../src/resolve";
+import { defaultTheme } from "../src/theme";
+
+function assert(cond: unknown, msg: string): asserts cond {
+  if (!cond) throw new Error(msg);
+}
 
 const resolved = resolveCard({ level: "Learner", fullName: "Test", memberSince: "2026" });
-if (resolved.brand !== "") throw new Error(`default brand should be empty, got ${JSON.stringify(resolved.brand)}`);
-if (resolved.showMark !== true) throw new Error("showMark should default true");
+assert(resolved.brand === "", `default brand should be empty, got ${JSON.stringify(resolved.brand)}`);
+assert(resolved.showMark === true, "showMark should default true");
 
 const grid = gltfFaceGrid(resolved.theme.grid);
-if (grid.cols !== 14 || (grid.padCols ?? 0) !== 0) throw new Error("gltf grid must be 14 cols, no pads");
+assert(grid.cols === 14 && (grid.padCols ?? 0) === 0, "gltf grid must be 14 cols, no pads");
 const right = grid.originX + grid.cols * grid.cell + (grid.cols - 1) * grid.gap;
-if (right > 1600) throw new Error(`right edge too far: ${right}`);
+assert(right <= 1600, `right edge too far: ${right}`);
 const model = buildFaceModel(resolved.theme, resolved.title, resolved.caption, "Learner");
-if (model.cells.length < 50) throw new Error(`cells ${model.cells.length}`);
+assert(model.cells.length >= 50, `cells ${model.cells.length}`);
 
-if (BACK_CX !== 834) throw new Error(`BACK_CX drift: ${BACK_CX}`);
+assert(BACK_CX === 834, `BACK_CX drift: ${BACK_CX}`);
 
 const branded = resolveCard({ level: "Sage", brand: "ARTIFACT", showMark: false });
-if (branded.brand !== "ARTIFACT" || branded.showMark !== false) {
-  throw new Error("brand/showMark overrides failed");
+assert(branded.brand === "ARTIFACT" && branded.showMark === false, "brand/showMark overrides failed");
+
+assert(defaultTheme.type.brandSize >= 72, "back brand size bumped");
+assert(defaultTheme.type.nameSize >= 104, "back name size bumped");
+assert(defaultTheme.type.metaSize >= 42, "back meta size bumped");
+
+// Mosaic/type layers must share layout even when chrome text is empty.
+{
+  const px = 256;
+  const layoutA = faceLayout(model, px);
+  const emptyChrome = buildFaceModel(resolved.theme, "  ", "", "Learner");
+  const layoutB = faceLayout(emptyChrome, px);
+  assert(layoutA.scale === layoutB.scale, "layout scale stable without title");
+  assert(layoutA.ox === layoutB.ox && layoutA.oy === layoutB.oy, "layout origin stable");
+
+  const fitA = faceLayout(model, px, { fit: true });
+  const fitB = faceLayout(emptyChrome, px, { fit: true });
+  assert(fitA.scale === fitB.scale && fitA.inset === fitB.inset, "fit layout stable");
+
+  const emptyCells = { ...model, cells: [] };
+  const emptyLayout = faceLayout(emptyCells, px);
+  assert(Number.isFinite(emptyLayout.scale) && emptyLayout.scale > 0, "empty mosaic layout stays finite");
 }
 
 console.log("paint.check ok", { cols: grid.cols, right, cells: model.cells.length, BACK_CX });

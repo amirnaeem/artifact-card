@@ -1,7 +1,13 @@
 import { forwardRef, useEffect, useRef } from "react";
+import { ACCENT_FLICKER_MS, contentPad, stepAccentCells } from "./grid";
 import { assignRef, bufferPx } from "./lib/canvas";
-import { buildFaceModel, paintFace } from "./paint";
-import type { LevelCardTheme } from "./types";
+import {
+  buildFaceModel,
+  flickerFillsFor,
+  paintFaceChrome,
+  paintFaceMosaic,
+} from "./paint";
+import type { AccentCell, LevelCardTheme } from "./types";
 
 type Props = {
   theme: LevelCardTheme;
@@ -10,48 +16,101 @@ type Props = {
   level?: string;
   /** Crop to mosaic; hide title / caption / mark. */
   mini?: boolean;
+  /** Step-animate accent tiles. Default off. */
+  flicker?: boolean;
   /** CSS box size in px; buffer uses devicePixelRatio. */
   size?: number;
   className?: string;
 };
 
 export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function LevelCardFace(
-  { theme, title, caption, level, mini, size = 320, className },
+  { theme, title, caption, level, mini, flicker = false, size = 320, className },
   ref,
 ) {
-  const local = useRef<HTMLCanvasElement>(null);
+  const mosaicRef = useRef<HTMLCanvasElement>(null);
+  const chromeRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = local.current;
-    if (!canvas) return;
+    const mosaic = mosaicRef.current;
+    if (!mosaic) return;
     let cancelled = false;
-    const paint = () => {
-      if (cancelled || !local.current) return;
+    const fills = flicker ? flickerFillsFor(theme, level) : null;
+    const { contentCols } = contentPad(theme.grid);
+    let accents: AccentCell[] | undefined = fills
+      ? stepAccentCells(fills, theme.grid.voidCells, contentCols, theme.grid.rows)
+      : undefined;
+
+    const paintOpts = { mini, fit: !mini };
+    // Chrome layout ignores accent steps so type stays put while tiles flicker.
+    const chromeModel = mini
+      ? null
+      : buildFaceModel(theme, title, caption, level, { flat: true });
+
+    const paintMosaic = () => {
+      if (cancelled || !mosaicRef.current) return;
       const px = bufferPx(size);
-      local.current.width = local.current.height = px;
-      paintFace(local.current, buildFaceModel(theme, title, caption, level, { flat: true }), {
-        mini,
-        fit: !mini,
-      });
+      mosaicRef.current.width = mosaicRef.current.height = px;
+      paintFaceMosaic(
+        mosaicRef.current,
+        buildFaceModel(theme, title, caption, level, {
+          flat: true,
+          accentCells: accents,
+        }),
+        paintOpts,
+      );
     };
-    paint();
-    void document.fonts.ready.then(paint);
+
+    const paintChrome = () => {
+      if (cancelled || !chromeModel || !chromeRef.current) return;
+      const px = bufferPx(size);
+      chromeRef.current.width = chromeRef.current.height = px;
+      paintFaceChrome(chromeRef.current, chromeModel, paintOpts);
+    };
+
+    paintMosaic();
+    paintChrome();
+    void document.fonts.ready.then(paintChrome);
+
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let timer = 0;
+    if (fills && !reduce) {
+      timer = window.setInterval(() => {
+        accents = stepAccentCells(fills, theme.grid.voidCells, contentCols, theme.grid.rows);
+        paintMosaic();
+      }, ACCENT_FLICKER_MS);
+    }
+
     return () => {
       cancelled = true;
+      if (timer) window.clearInterval(timer);
     };
-  }, [theme, title, caption, level, mini, size]);
+  }, [theme, title, caption, level, mini, flicker, size]);
 
   return (
-    <canvas
-      ref={(node) => {
-        local.current = node;
-        assignRef(ref, node);
-      }}
-      className={["level-card__canvas", "level-card__face", mini ? "level-card__face--mini" : "", className]
+    <div
+      className={["level-card__face-stack", mini ? "level-card__face-stack--mini" : "", className]
         .filter(Boolean)
         .join(" ")}
       role="img"
       aria-label={mini ? title : `${title} — ${caption}`}
-    />
+    >
+      <canvas
+        ref={(node) => {
+          mosaicRef.current = node;
+          assignRef(ref, node);
+        }}
+        className="level-card__canvas level-card__face-mosaic"
+        aria-hidden="true"
+      />
+      {mini ? null : (
+        <canvas
+          ref={chromeRef}
+          className="level-card__canvas level-card__face-chrome"
+          aria-hidden="true"
+        />
+      )}
+    </div>
   );
 });

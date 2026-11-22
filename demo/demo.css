@@ -1,25 +1,23 @@
 :root {
   color-scheme: light;
-  --ink: #121212;
-  --mute: #5c5c5c;
-  --line: #e6e2da;
-  --paper: #ffffff;
-  --wash: #eceae4;
-  --wash-deep: #e2dfd6;
+  --ink: #141414;
+  --mute: #6a6a6a;
+  --line: #e4e0d8;
+  --paper: #fff;
+  --wash: #efece6;
   --font-ui: "DM Sans", "Segoe UI", sans-serif;
   --font-head: "Syne", "DM Sans", sans-serif;
   --font-display: "Syne", "DM Sans", sans-serif;
   --font-sans: "DM Sans", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --shadow: 0 1px 0 rgba(18, 18, 18, 0.04), 0 18px 48px rgba(18, 18, 18, 0.07);
-  --radius: 18px;
+  --shadow: 0 1px 0 rgba(20, 20, 20, 0.04), 0 16px 40px rgba(20, 20, 20, 0.06);
+  --radius: 16px;
 
   font-family: var(--font-ui);
-  background:
-    radial-gradient(1200px 600px at 10% -10%, #f7f5ef 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #e8ebe7 0%, transparent 50%),
-    linear-gradient(180deg, var(--wash) 0%, var(--wash-deep) 100%);
   color: var(--ink);
+  background:
+    radial-gradient(900px 480px at 8% -8%, #f8f6f0 0%, transparent 55%),
+    linear-gradient(180deg, var(--wash), #e7e3db);
   background-attachment: fixed;
 }
 
@@ -33,38 +31,54 @@ body {
   margin: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 .demo {
-  --demo-max: 760px;
-  max-width: var(--demo-max);
+  max-width: 720px;
   margin: 0 auto;
-  padding: clamp(28px, 5vw, 56px) clamp(16px, 4vw, 28px) 80px;
+  padding: clamp(28px, 5vw, 52px) clamp(16px, 4vw, 24px) 72px;
   display: grid;
-  gap: 22px;
+  gap: 18px;
+}
+
+.demo__eyebrow,
+.demo__label,
+.demo__sample figcaption,
+.demo__rung-idx,
+.demo__awards-cap,
+.demo__rung-cap {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mute);
 }
 
 .demo__header {
   display: grid;
-  gap: 10px;
-  padding: 8px 2px 4px;
+  gap: 8px;
+  padding: 4px 2px 2px;
+}
+
+.demo__eyebrow {
+  margin: 0;
 }
 
 .demo__header h1 {
   margin: 0;
   font-family: var(--font-head);
-  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-size: clamp(2rem, 5vw, 2.6rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 0.95;
 }
 
-.demo__header p {
+.demo__lede {
   margin: 0;
-  max-width: 36rem;
+  max-width: 34rem;
   color: var(--mute);
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1.45;
 }
 
@@ -74,85 +88,136 @@ body {
   box-shadow: var(--shadow);
 }
 
-.demo__control {
+/* —— Award ladder —— */
+.demo__awards {
+  padding: 16px;
   display: grid;
+  gap: 14px;
+}
+
+.demo__awards-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
-  padding: 16px 18px 18px;
 }
 
-.demo__control-label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+.demo__label {
+  margin: 0 0 4px;
+}
+
+.demo__awards-current {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+  font-family: var(--font-head);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.demo__awards-cap {
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--mute);
 }
 
-.demo__levels {
+.demo__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.demo__switch input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.demo__ladder {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
-@media (max-width: 520px) {
-  .demo__levels {
+@media (max-width: 560px) {
+  .demo__ladder {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.demo__level {
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: 10px 8px;
-  border-radius: 12px;
+.demo__rung {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 10px 11px;
   border: 1px solid var(--line);
-  background: #f7f5f0;
+  border-radius: 12px;
+  background: #f6f4ef;
   color: var(--ink);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   touch-action: manipulation;
-  text-align: center;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
-.demo__level:hover {
-  border-color: #cfc9bd;
+.demo__rung:hover {
   background: #fff;
+  border-color: #d2cdc3;
 }
 
-.demo__level:focus-visible {
+.demo__rung:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
-.demo__level--active {
+.demo__rung-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.demo__rung-cap {
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+}
+
+.demo__rung--on {
   border-color: var(--ink);
   background: var(--ink);
   color: #fff;
 }
 
-.demo__level--active:hover {
+.demo__rung--on .demo__rung-idx,
+.demo__rung--on .demo__rung-cap {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.demo__rung--on:hover {
   background: #2a2a2a;
   border-color: #2a2a2a;
 }
 
+/* —— Stage / labs —— */
 .demo__stage {
-  padding: 8px 8px 12px;
   position: relative;
+  padding: 8px 8px 12px;
 }
 
 .demo__stage-label {
   position: absolute;
-  top: 18px;
-  left: 20px;
+  top: 16px;
+  left: 18px;
   z-index: 2;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--mute);
   pointer-events: none;
 }
 
@@ -163,11 +228,11 @@ body {
 }
 
 .demo__labs {
-  padding: 20px 20px 24px;
+  padding: 18px 18px 22px;
 }
 
 .demo__labs-head {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   display: grid;
   gap: 4px;
 }
@@ -175,7 +240,7 @@ body {
 .demo__labs-head h2 {
   margin: 0;
   font-family: var(--font-head);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -183,14 +248,14 @@ body {
 .demo__labs-head p {
   margin: 0;
   color: var(--mute);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   line-height: 1.4;
 }
 
 .demo__row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -207,7 +272,7 @@ body {
 .demo__sample {
   margin: 0;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   justify-items: center;
 }
 
@@ -220,10 +285,5 @@ body {
 }
 
 .demo__sample figcaption {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--mute);
+  margin: 0;
 }

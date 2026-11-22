@@ -3,8 +3,15 @@
  *   npx tsx src/components/level-card/grid.check.ts
  * from the web/ package.
  */
-import { buildCells, contentPad, gridMetrics, scatterFillsInContent } from "../src/grid";
+import {
+  buildCells,
+  contentPad,
+  gridMetrics,
+  scatterFillsInContent,
+  stepAccentCells,
+} from "../src/grid";
 import { BEGINNER_COLOR_FILLS, LEVEL_CARD_ORDER, LEVEL_CARD_PRESETS } from "../src/presets";
+import { flickerFillsFor } from "../src/paint";
 import { resolveCard } from "../src/resolve";
 import {
   EXPLORER_ACCENTS,
@@ -79,6 +86,35 @@ const scattered = scatterFillsInContent(
   () => 0.5,
 );
 assert(scattered.length === 10, "Beginner scatter places 10");
+
+{
+  const savantFills = flickerFillsFor(savant.theme, "Savant");
+  assert(savantFills && savantFills.length === SAVANT_ACCENTS.length, "Savant flicker fills");
+  assert(flickerFillsFor(sage.theme, "Sage") === null, "Sage has no accent flicker");
+  assert(flickerFillsFor(oracle.theme, "Oracle") === null, "Oracle has no accent flicker");
+  const voidSet = new Set(savant.theme.grid.voidCells.map(([c, r]) => `${c},${r}`));
+  let seq = 0;
+  const rngA = () => {
+    seq += 0.17;
+    return seq % 1;
+  };
+  seq = 0.3;
+  const rngB = () => {
+    seq += 0.41;
+    return seq % 1;
+  };
+  const a = stepAccentCells(savantFills!, savant.theme.grid.voidCells, contentCols, 15, rngA);
+  const b = stepAccentCells(savantFills!, savant.theme.grid.voidCells, contentCols, 15, rngB);
+  assert(a.length === savantFills!.length, "step keeps accent count");
+  assert(
+    a.every((cell) => !voidSet.has(`${cell.c},${cell.r}`)),
+    "step accents never land on voids",
+  );
+  assert(
+    a.some((cell, i) => cell.c !== b[i]?.c || cell.r !== b[i]?.r || cell.fill !== b[i]?.fill),
+    "two steps can differ",
+  );
+}
 
 for (const name of LEVEL_CARD_ORDER) {
   assert(LEVEL_CARD_PRESETS[name], `missing preset ${name}`);

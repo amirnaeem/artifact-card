@@ -4,6 +4,19 @@ import { buildCells, contentPad, gridMetrics, scatterFillsInContent } from "./gr
 import { BEGINNER_COLOR_FILLS } from "./presets";
 import type { AccentCell, GridSpec, LevelCardTheme } from "./types";
 
+/** Chromatic levels only — Sage/Oracle body maps stay static. */
+export function flickerFillsFor(
+  theme: LevelCardTheme,
+  level?: string,
+): string[] | null {
+  if (theme.grid.bodyCells?.length) return null;
+  if (level === "Beginner") return BEGINNER_COLOR_FILLS;
+  const fills = theme.grid.accentCells
+    .map((a) => a.fill ?? theme.accents[a.colorIndex ?? -1])
+    .filter((f): f is string => typeof f === "string");
+  return fills.length > 0 ? fills : null;
+}
+
 export type FacePaintModel = {
   theme: LevelCardTheme;
   title: string;
@@ -12,6 +25,12 @@ export type FacePaintModel = {
   cells: ReturnType<typeof buildCells>;
   textX: number;
   markX: number;
+};
+
+export type FacePaintOpts = {
+  mini?: boolean;
+  /** Crop/scale art to fill the canvas (lab faces). */
+  fit?: boolean;
 };
 
 /** Back content axis — GLTF UVs are authored to this, not texture mid (1024). */
@@ -82,6 +101,113 @@ function drawAsterisk(
   ctx.restore();
 }
 
+/** Dark carve + light lip + fill — engraved metal stamp. */
+function embossAsterisk(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  len: number,
+  stroke: number,
+  color: string,
+) {
+  drawAsterisk(ctx, cx + 2, cy + 2.5, len, stroke + 2, "rgba(0,0,0,0.5)");
+  drawAsterisk(ctx, cx - 1.5, cy - 2, len, stroke - 2, "rgba(255,255,255,0.2)");
+  drawAsterisk(ctx, cx, cy, len, stroke, color);
+}
+
+type FaceLayout = {
+  scale: number;
+  ox: number;
+  oy: number;
+  framed: boolean;
+  inset: number;
+  inner: number;
+};
+
+/** Shared mosaic/type transform so layers stay aligned. */
+export function faceLayout(
+  model: FacePaintModel,
+  px: number,
+  opts?: FacePaintOpts,
+): FaceLayout {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const cell of model.cells) {
+    minX = Math.min(minX, cell.x);
+    minY = Math.min(minY, cell.y);
+    maxX = Math.max(maxX, cell.x + cell.w);
+    maxY = Math.max(maxY, cell.y + cell.h);
+  }
+  if (!Number.isFinite(minX)) {
+    minX = 0;
+    minY = 0;
+    maxX = 2048;
+    maxY = 1940;
+  }
+
+  if (opts?.mini) {
+    const contentW = Math.max(1, maxX - minX);
+    const contentH = Math.max(1, maxY - minY);
+    const scale = Math.max(px / contentW, px / contentH);
+    return {
+      scale,
+      ox: (px - contentW * scale) / 2 - minX * scale,
+      oy: (px - contentH * scale) / 2 - minY * scale,
+      framed: false,
+      inset: 0,
+      inner: px,
+    };
+  }
+
+  if (opts?.fit) {
+    maxY = Math.max(maxY, 1940);
+    const markRight = model.markX + 80;
+    if (markRight > maxX) {
+      const extra = markRight - maxX;
+      maxX = markRight;
+      minX -= extra;
+    }
+    const contentW = Math.max(1, maxX - minX);
+    const contentH = Math.max(1, maxY - minY);
+    const inset = Math.round(px * 0.08);
+    const inner = px - inset * 2;
+    const scale = Math.min(inner / contentW, inner / contentH);
+    return {
+      scale,
+      ox: inset + (inner - contentW * scale) / 2 - minX * scale,
+      oy: inset + (inner - contentH * scale) / 2 - minY * scale,
+      framed: true,
+      inset,
+      inner,
+    };
+  }
+
+  const scale = px / 2048;
+  return { scale, ox: 0, oy: 0, framed: false, inset: 0, inner: px };
+}
+
+function applyLayout(ctx: CanvasRenderingContext2D, layout: FaceLayout) {
+  ctx.setTransform(layout.scale, 0, 0, layout.scale, layout.ox, layout.oy);
+}
+
+function withFaceClip(
+  ctx: CanvasRenderingContext2D,
+  layout: FaceLayout,
+  draw: () => void,
+) {
+  if (layout.framed) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(layout.inset, layout.inset, layout.inner, layout.inner);
+    ctx.clip();
+  }
+  applyLayout(ctx, layout);
+  draw();
+  if (layout.framed) ctx.restore();
+}
+
 /** GLTF face uses 14 content cols from ~119 — not the 18-col padded lab grid. */
 export function gltfFaceGrid(grid: GridSpec): GridSpec {
   const contentCols = grid.contentCols ?? 14;
@@ -100,15 +226,16 @@ export function buildFaceModel(
   title: string,
   caption: string,
   level: string | undefined,
-  /** Lab/flat faces use the padded grid so the mosaic fills the square. */
-  opts?: { flat?: boolean },
+  opts?: { flat?: boolean; accentCells?: AccentCell[] },
 ): FacePaintModel {
   const gridSpec0 = opts?.flat ? theme.grid : gltfFaceGrid(theme.grid);
   const { cellW, stepX } = gridMetrics(gridSpec0);
   const { contentCols } = contentPad(gridSpec0);
 
   let gridSpec = gridSpec0;
-  if (level === "Beginner") {
+  if (opts?.accentCells) {
+    gridSpec = { ...gridSpec0, accentCells: opts.accentCells };
+  } else if (level === "Beginner") {
     const accents: AccentCell[] = scatterFillsInContent(
       BEGINNER_COLOR_FILLS,
       gridSpec0.voidCells,
@@ -133,90 +260,123 @@ export function buildFaceModel(
   };
 }
 
-export function paintFace(
+/** Opaque mosaic layer (background + embossed tiles). */
+export function paintFaceMosaic(
   canvas: HTMLCanvasElement,
   model: FacePaintModel,
-  opts?: { mini?: boolean; /** Crop/scale art to fill the canvas (lab faces). */ fit?: boolean },
+  opts?: FacePaintOpts,
 ) {
   const px = canvas.width;
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) return;
-  const { theme } = model;
+  const layout = faceLayout(model, px, opts);
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = theme.background;
+  ctx.fillStyle = model.theme.background;
   ctx.fillRect(0, 0, px, px);
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const cell of model.cells) {
-    minX = Math.min(minX, cell.x);
-    minY = Math.min(minY, cell.y);
-    maxX = Math.max(maxX, cell.x + cell.w);
-    maxY = Math.max(maxY, cell.y + cell.h);
-  }
-
-  let framed = false;
-  if (opts?.mini) {
-    // Tiles only — cover the square, no letterbox.
-    const contentW = Math.max(1, maxX - minX);
-    const contentH = Math.max(1, maxY - minY);
-    const scale = Math.max(px / contentW, px / contentH);
-    const ox = (px - contentW * scale) / 2 - minX * scale;
-    const oy = (px - contentH * scale) / 2 - minY * scale;
-    ctx.setTransform(scale, 0, 0, scale, ox, oy);
-  } else if (opts?.fit) {
-    maxY = Math.max(maxY, 1940);
-    // Keep mosaic centered if the mark sticks past the right edge.
-    const markRight = model.markX + 80;
-    if (markRight > maxX) {
-      const extra = markRight - maxX;
-      maxX = markRight;
-      minX -= extra;
+  withFaceClip(ctx, layout, () => {
+    for (const cell of model.cells) {
+      roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 6);
+      ctx.fillStyle = cell.fill;
+      ctx.fill();
+      roundRect(ctx, cell.x + 1.2, cell.y + 1.2, cell.w - 2.4, cell.h - 2.4, 5);
+      ctx.strokeStyle = "rgba(255,255,255,0.28)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      roundRect(ctx, cell.x + 2.2, cell.y + 2.2, cell.w - 3.2, cell.h - 3.2, 4);
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
     }
-    const contentW = Math.max(1, maxX - minX);
-    const contentH = Math.max(1, maxY - minY);
-    const inset = Math.round(px * 0.08);
-    const inner = px - inset * 2;
-    const scale = Math.min(inner / contentW, inner / contentH);
-    const ox = inset + (inner - contentW * scale) / 2 - minX * scale;
-    const oy = inset + (inner - contentH * scale) / 2 - minY * scale;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(inset, inset, inner, inner);
-    ctx.clip();
-    ctx.setTransform(scale, 0, 0, scale, ox, oy);
-    framed = true;
-  } else {
-    const scale = px / 2048;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  }
+  });
+}
 
-  for (const cell of model.cells) {
-    roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 6);
-    ctx.fillStyle = cell.fill;
-    ctx.fill();
-  }
+function drawEmbossedChrome(
+  ctx: CanvasRenderingContext2D,
+  model: FacePaintModel,
+  layout: FaceLayout,
+) {
+  const { theme } = model;
+  withFaceClip(ctx, layout, () => {
+    const embossText = (text: string, x: number, y: number, fill: string, font: string) => {
+      ctx.font = font;
+      ctx.textBaseline = "alphabetic";
+      ctx.textAlign = "left";
+      ctx.letterSpacing = "0px";
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillText(text, x + 2.5, y + 3.5);
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.fillText(text, x - 1.5, y - 2);
+      ctx.fillStyle = fill;
+      ctx.fillText(text, x, y);
+    };
 
-  if (opts?.mini) {
-    if (framed) ctx.restore();
-    return;
-  }
+    const title = model.title.trim();
+    if (title) {
+      embossText(
+        title,
+        model.textX,
+        1820,
+        theme.titleColor,
+        `${theme.type.titleWeight} ${theme.type.titleSize}px ${resolveCssFont(theme.fonts.title)}`,
+      );
+    }
 
-  ctx.fillStyle = theme.titleColor;
-  ctx.font = `${theme.type.titleWeight} ${theme.type.titleSize}px ${resolveCssFont(theme.fonts.title)}`;
-  ctx.textBaseline = "alphabetic";
-  ctx.textAlign = "left";
-  ctx.fillText(model.title, model.textX, 1820);
+    const caption = model.caption.trim();
+    if (caption) {
+      embossText(
+        caption.toUpperCase(),
+        model.textX + 4,
+        1900,
+        theme.captionColor,
+        `${theme.type.captionWeight} ${theme.type.captionSize}px ${resolveCssFont(theme.fonts.caption)}`,
+      );
+    }
 
-  ctx.fillStyle = theme.captionColor;
-  ctx.font = `${theme.type.captionWeight} ${theme.type.captionSize}px ${resolveCssFont(theme.fonts.caption)}`;
-  ctx.fillText(model.caption.toUpperCase(), model.textX + 4, 1900);
+    embossAsterisk(ctx, model.markX, 1840, 70, 16, theme.markColor);
+  });
+}
 
-  drawAsterisk(ctx, model.markX, 1840, 70, 16, theme.markColor);
-  if (framed) ctx.restore();
+/** Transparent type layer (title / caption / mark). Mini → clear only. */
+export function paintFaceChrome(
+  canvas: HTMLCanvasElement,
+  model: FacePaintModel,
+  opts?: FacePaintOpts,
+) {
+  const px = canvas.width;
+  const ctx = canvas.getContext("2d", { alpha: true });
+  if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, px, px);
+  if (opts?.mini) return;
+  drawEmbossedChrome(ctx, model, faceLayout(model, px, opts));
+}
+
+/** Stamp mosaic then chrome onto an opaque destination (compat path). */
+export function compositeFace(
+  dest: HTMLCanvasElement,
+  mosaic: HTMLCanvasElement,
+  chrome: HTMLCanvasElement,
+) {
+  const ctx = dest.getContext("2d", { alpha: false });
+  if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(mosaic, 0, 0);
+  ctx.drawImage(chrome, 0, 0);
+}
+
+/** Full face: mosaic + chrome on one canvas (compat / non-layered callers). */
+export function paintFace(
+  canvas: HTMLCanvasElement,
+  model: FacePaintModel,
+  opts?: FacePaintOpts,
+) {
+  paintFaceMosaic(canvas, model, opts);
+  if (opts?.mini) return;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) return;
+  drawEmbossedChrome(ctx, model, faceLayout(model, canvas.width, opts));
 }
 
 function setFont(
@@ -237,23 +397,36 @@ function setFont(
   ctx.font = `${weight} ${s}px ${font}`;
 }
 
-/** Back texture: centered stack on BACK_CX, mirrored for back-mesh UVs. */
-export function paintBack(
-  canvas: HTMLCanvasElement,
-  opts: {
-    theme: LevelCardTheme;
-    brand: string;
-    fullName: string;
-    memberSince: string;
-    showMark?: boolean;
-    /** Flat/lab faces are not UV-mirrored. */
-    mirror?: boolean;
-  },
-) {
-  const px = canvas.width;
-  const scale = px / 2048;
-  const ctx = canvas.getContext("2d", { alpha: false });
-  if (!ctx) return;
+export type BackPaintOpts = {
+  theme: LevelCardTheme;
+  brand: string;
+  fullName: string;
+  memberSince: string;
+  showMark?: boolean;
+  /** Flat/lab faces are not UV-mirrored. */
+  mirror?: boolean;
+};
+
+type BackLayout = {
+  cx: number;
+  yBrand: number;
+  yName: number;
+  yMeta: number;
+  yMark: number;
+  brand: string;
+  name: string;
+  since: string;
+  showMark: boolean;
+  brandSize: number;
+  nameSize: number;
+  metaSize: number;
+};
+
+function prepareBackCtx(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  opts: BackPaintOpts,
+): BackLayout {
   const { theme } = opts;
   const brand = opts.brand.trim();
   const name = opts.fullName.trim();
@@ -261,12 +434,11 @@ export function paintBack(
   const showMark = opts.showMark !== false;
   const mirror = opts.mirror !== false;
   const cx = mirror ? BACK_CX : 1024;
+  const brandSize = theme.type.brandSize;
+  const nameSize = theme.type.nameSize;
+  const metaSize = theme.type.metaSize;
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = theme.background;
-  ctx.fillRect(0, 0, px, px);
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-
+  ctx.setTransform(px / 2048, 0, 0, px / 2048, 0, 0);
   if (mirror) {
     ctx.translate(cx, 0);
     ctx.scale(-1, 1);
@@ -277,17 +449,16 @@ export function paintBack(
   ctx.textBaseline = "middle";
   ctx.direction = "ltr";
 
-  // GLTF: authored Y. Flat lab: pack + scale the stack so it fills the square.
   let yBrand = 720;
   let yName = 1180;
   let yMeta = 1280;
   let yMark = 1580;
   if (!mirror) {
     const lines: number[] = [];
-    if (brand) lines.push(80);
-    if (name) lines.push(110);
-    if (since) lines.push(48);
-    if (showMark) lines.push(104);
+    if (brand) lines.push(Math.round(brandSize * 1.15));
+    if (name) lines.push(Math.round(nameSize * 1.15));
+    if (since) lines.push(Math.round(metaSize * 1.35));
+    if (showMark) lines.push(116);
     const gap = 36;
     const total = lines.reduce((s, h) => s + h, 0) + gap * Math.max(0, lines.length - 1);
     let y = 1024 - total / 2;
@@ -306,29 +477,67 @@ export function paintBack(
     ctx.translate(-cx, -1024);
   }
 
+  return {
+    cx,
+    yBrand,
+    yName,
+    yMeta,
+    yMark,
+    brand,
+    name,
+    since,
+    showMark,
+    brandSize,
+    nameSize,
+    metaSize,
+  };
+}
+
+function drawEmbossedBackType(
+  ctx: CanvasRenderingContext2D,
+  opts: BackPaintOpts,
+  layout: BackLayout,
+) {
+  const { theme } = opts;
+  const { cx, yBrand, yName, yMeta, yMark, brand, name, since, showMark, brandSize, nameSize, metaSize } =
+    layout;
+
+  const embossCentered = (text: string, y: number, fill: string, tracking: string) => {
+    ctx.letterSpacing = tracking;
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillText(text, cx + 2.5, y + 3.5);
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.fillText(text, cx - 1.5, y - 2);
+    ctx.fillStyle = fill;
+    ctx.fillText(text, cx, y);
+    ctx.letterSpacing = "0px";
+  };
+
   if (brand) {
-    setFont(ctx, brand.toUpperCase(), theme.type.brandWeight, 64, theme.fonts.brand, BACK_MAX_W);
-    ctx.fillStyle = theme.brandColor;
-    ctx.letterSpacing = "0.28em";
-    ctx.fillText(brand.toUpperCase(), cx, yBrand);
+    setFont(ctx, brand.toUpperCase(), theme.type.brandWeight, brandSize, theme.fonts.brand, BACK_MAX_W);
+    embossCentered(brand.toUpperCase(), yBrand, theme.brandColor, "0.28em");
   }
-
   if (name) {
-    setFont(ctx, name, theme.type.nameWeight, 92, theme.fonts.name, BACK_MAX_W);
-    ctx.fillStyle = theme.nameColor;
-    ctx.letterSpacing = "-0.01em";
-    ctx.fillText(name, cx, yName);
+    setFont(ctx, name, theme.type.nameWeight, nameSize, theme.fonts.name, BACK_MAX_W);
+    embossCentered(name, yName, theme.nameColor, "-0.01em");
   }
-
   if (since) {
     const meta = `MEMBER SINCE ${since.toUpperCase()}`;
-    setFont(ctx, meta, theme.type.metaWeight, 36, theme.fonts.meta, BACK_MAX_W);
-    ctx.fillStyle = theme.metaColor;
-    ctx.letterSpacing = "0.18em";
-    ctx.fillText(meta, cx, yMeta);
+    setFont(ctx, meta, theme.type.metaWeight, metaSize, theme.fonts.meta, BACK_MAX_W);
+    embossCentered(meta, yMeta, theme.metaColor, "0.18em");
   }
-
   if (showMark) {
-    drawAsterisk(ctx, cx, yMark, 52, 12, theme.markColor);
+    embossAsterisk(ctx, cx, yMark, 58, 13, theme.markColor);
   }
+}
+
+/** Full back: plate + embossed type. */
+export function paintBack(canvas: HTMLCanvasElement, opts: BackPaintOpts) {
+  const px = canvas.width;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = opts.theme.background;
+  ctx.fillRect(0, 0, px, px);
+  drawEmbossedBackType(ctx, opts, prepareBackCtx(ctx, px, opts));
 }

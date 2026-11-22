@@ -82,6 +82,8 @@ export type LevelCardProps = {
   side?: "front" | "back";
   /** Mosaic-only face (no title/caption); cropped to the tile grid. */
   mini?: boolean;
+  /** Step-animate accent tiles (Beginner→Savant). Default off. */
+  flicker?: boolean;
   flipped?: boolean;
   defaultFlipped?: boolean;
   onFlip?: (flipped: boolean) => void;

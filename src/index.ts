@@ -14,7 +14,14 @@ export {
 export type { LevelCardName } from "./presets";
 
 export { CARD_GLTF_URL } from "./assets";
-export { paintBack, paintFace, buildFaceModel } from "./paint";
+export {
+  paintBack,
+  paintFace,
+  paintFaceMosaic,
+  paintFaceChrome,
+  compositeFace,
+  buildFaceModel,
+} from "./paint";
 
 export type {
   LevelCardProps,
