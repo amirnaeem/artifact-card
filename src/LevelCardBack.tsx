@@ -52,7 +52,7 @@ export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function Level
         local.current = node;
         assignRef(ref, node);
       }}
-      className={["level-card__canvas", "level-card__back", className].filter(Boolean).join(" ")}
+      className={["level-card__canvas", className].filter(Boolean).join(" ")}
       role="img"
       aria-label={`${resolved.brand || "Card"} for ${resolved.fullName || "member"}`}
     />

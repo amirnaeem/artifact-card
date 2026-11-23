@@ -112,9 +112,6 @@ export function registerCategory(cat: CardCategory): CardCategory {
   return cat;
 }
 
-/** @deprecated Use registerCategory / package `defineCategory`. */
-export const defineCategory = registerCategory;
-
 /** Remove a category and its reveal ladder entry (tests / host teardown). */
 export function unregisterCategory(id: string): void {
   const cat = CARD_CATEGORIES[id];

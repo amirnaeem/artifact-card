@@ -775,7 +775,7 @@ export function LevelCardGl(props: LevelCardProps) {
 
   return (
     <div className="level-card__wrap">
-      <div ref={host} role="img" aria-label={`Reading level: ${resolved.title}`} className="rankcard" />
+      <div ref={host} role="img" aria-label={`${resolved.title} level card`} className="rankcard" />
       <div className="level-card__actions">
         <button
           type="button"

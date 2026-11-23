@@ -41,7 +41,7 @@ export function getImage(url: string): HTMLImageElement | null {
   return img?.complete && img.naturalWidth > 0 ? img : null;
 }
 
-export function onImageLoad(url: string, cb: () => void): () => void {
+function onImageLoad(url: string, cb: () => void): () => void {
   if (!isSafeAssetUrl(url)) return () => {};
   const e = entry(url);
   e.listeners.add(cb);
@@ -54,7 +54,7 @@ function notify(e: Entry) {
   for (const cb of e.listeners) cb();
 }
 
-export function loadImage(url: string): Promise<HTMLImageElement> {
+function loadImage(url: string): Promise<HTMLImageElement> {
   if (!isSafeAssetUrl(url)) {
     return Promise.reject(new Error("Unsafe asset URL"));
   }

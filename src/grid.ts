@@ -26,12 +26,6 @@ export function contentPad(grid: GridSpec) {
   return { pad, contentCols };
 }
 
-/** Map content-space voids into full grid coordinates (after side padding). */
-export function paddedVoids(grid: GridSpec): Array<[number, number]> {
-  const { pad } = contentPad(grid);
-  return grid.voidCells.map(([c, r]) => [c + pad, r]);
-}
-
 function resolveContentFill(
   contentC: number,
   r: number,
@@ -156,7 +150,7 @@ export function buildCells(
 }
 
 /** Pick fills onto random non-void cells across the full (padded) grid. */
-export function scatterFills(
+function scatterFills(
   fills: string[],
   voidCells: Array<[number, number]>,
   cols: number,
