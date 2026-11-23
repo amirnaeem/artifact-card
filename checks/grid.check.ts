@@ -1,8 +1,4 @@
-/**
- * Runnable self-check for grid + resolve. Run:
- *   npx tsx src/components/level-card/grid.check.ts
- * from the web/ package.
- */
+/** Runnable self-check for grid + ninja voids + resolve. */
 import {
   buildCells,
   contentPad,
@@ -10,9 +6,26 @@ import {
   scatterFillsInContent,
   stepAccentCells,
 } from "../src/grid";
-import { BEGINNER_COLOR_FILLS, LEVEL_CARD_ORDER, LEVEL_CARD_PRESETS } from "../src/presets";
+import {
+  BEGINNER_COLOR_FILLS,
+  CARD_CATEGORIES,
+  LEVEL_CARD_ORDER,
+  LEVEL_CARD_PRESETS,
+  NINJA_CARD_ORDER,
+} from "../src/presets";
+import {
+  NINJA_VOID_SEED,
+  NINJA_VOIDS,
+  ninjaRevealOrder,
+  ninjaRevealedCount,
+  ninjaVoidsForRank,
+  ninjaVoidsForRevealed,
+} from "../src/ninja-voids";
+import { NINJA_ART_URL } from "../src/assets";
 import { flickerFillsFor } from "../src/paint";
 import { resolveCard } from "../src/resolve";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   EXPLORER_ACCENTS,
   LEARNER_ACCENTS,
@@ -120,6 +133,56 @@ for (const name of LEVEL_CARD_ORDER) {
   assert(LEVEL_CARD_PRESETS[name], `missing preset ${name}`);
   const r = resolveCard({ level: name });
   assert(r.theme.grid.cols === 18, `${name} padded cols`);
+}
+
+assert(CARD_CATEGORIES.reading.order === LEVEL_CARD_ORDER, "reading category order");
+assert(CARD_CATEGORIES.ninja.order === NINJA_CARD_ORDER, "ninja category order");
+
+for (const name of NINJA_CARD_ORDER) {
+  assert(LEVEL_CARD_PRESETS[name], `missing ninja preset ${name}`);
+  const r = resolveCard({ level: name });
+  assert(r.theme.grid.cols === 18, `${name} padded cols`);
+}
+
+{
+  assert(NINJA_VOIDS["AI Sensei"].length === 0, "Sensei has no voids");
+  assert(
+    ninjaVoidsForRevealed(ninjaRevealedCount(0)).length === NINJA_VOIDS["AI Curious"].length,
+    "revealed-count voids match Curious",
+  );
+  const a = ninjaVoidsForRank(0, NINJA_VOID_SEED);
+  const b = ninjaVoidsForRank(0, NINJA_VOID_SEED);
+  assert(
+    a.length === b.length && a.every((cell, i) => cell[0] === b[i]![0] && cell[1] === b[i]![1]),
+    "same seed → same Curious voids",
+  );
+  const order = ninjaRevealOrder(NINJA_VOID_SEED);
+  let prevRevealed = 0;
+  for (let i = 0; i < NINJA_CARD_ORDER.length; i++) {
+    const voids = NINJA_VOIDS[NINJA_CARD_ORDER[i]!];
+    const revealed = order.length - voids.length;
+    assert(revealed >= prevRevealed, `${NINJA_CARD_ORDER[i]} must reveal ≥ previous`);
+    prevRevealed = revealed;
+    const voidSet = new Set(voids.map(([c, r]) => `${c},${r}`));
+    for (let j = 0; j < revealed; j++) {
+      const [c, r] = order[j]!;
+      assert(!voidSet.has(`${c},${r}`), `revealed cell ${c},${r} must not be void at rank ${i}`);
+    }
+  }
+
+  assert(existsSync(resolve("src/assets/ninja/ninja.png")), "ninja.png missing");
+  assert(existsSync(resolve("src/assets/card/card.gltf")), "card.gltf missing");
+  assert(existsSync(resolve("src/assets/card/buffer-1.bin")), "card buffer missing");
+}
+
+{
+  assert(CARD_CATEGORIES.reading && CARD_CATEGORIES.ninja, "categories reading+ninja");
+  for (const id of Object.keys(CARD_CATEGORIES) as Array<keyof typeof CARD_CATEGORIES>) {
+    for (const name of CARD_CATEGORIES[id].order) {
+      assert(LEVEL_CARD_PRESETS[name], `preset missing for ${name}`);
+    }
+  }
+  assert(typeof NINJA_ART_URL === "string" && NINJA_ART_URL.length > 0, "NINJA_ART_URL export");
 }
 
 const overridden = resolveCard({ level: "Learner", theme: { primary: "#abcdef" } });

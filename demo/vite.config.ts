@@ -14,7 +14,10 @@ export default defineConfig({
     react(),
     // CARD_GLTF_URL is resolved from import.meta.url → needs assets/card next to the entry JS.
     viteStaticCopy({
-      targets: [{ src: resolve(root, "../src/assets/card"), dest: "assets" }],
+      targets: [
+        { src: resolve(root, "../src/assets/card"), dest: "assets" },
+        { src: resolve(root, "../src/assets/ninja"), dest: "assets" },
+      ],
     }),
   ],
   resolve: {

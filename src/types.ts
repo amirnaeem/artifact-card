@@ -77,8 +77,12 @@ export type LevelCardProps = {
   memberSince?: string;
   /** Back brand line; omitted when empty (no default). */
   brand?: string;
-  /** Draw the back asterisk mark. Default true. */
+  /** Show the back mark (asterisk or `markSrc`). Default true. */
   showMark?: boolean;
+  /** Face art URL (ninja panel + mosaic). Default: packaged ninja art for ninja levels. */
+  artSrc?: string;
+  /** Mark/logo URL; replaces the default asterisk on front + back. */
+  markSrc?: string;
   side?: "front" | "back";
   /** Mosaic-only face (no title/caption); cropped to the tile grid. */
   mini?: boolean;

@@ -1,4 +1,5 @@
 import type { AccentCell, LevelCardPreset, LevelCardTheme } from "./types";
+import { NINJA_CARD_ORDER, NINJA_VOIDS, type NinjaCardName } from "./ninja-voids";
 import { GRID_BASE } from "./voids";
 import {
   BEGINNER_ACCENTS,
@@ -19,6 +20,9 @@ import {
   SEEKER_VOIDS,
   type FillCell,
 } from "./svg-fills";
+
+export { NINJA_CARD_ORDER } from "./ninja-voids";
+export type { NinjaCardName } from "./ninja-voids";
 
 function toAccents(cells: FillCell[]): AccentCell[] {
   return cells.map(({ c, r, fill }) => ({ c, r, fill }));
@@ -94,6 +98,25 @@ export const LEVEL_CARD_PRESETS: Record<string, LevelCardPreset> = {
   }),
 };
 
+const NINJA_META: Record<NinjaCardName, { caption: string; primary: string }> = {
+  "AI Curious": { caption: "0 – 19 XP", primary: "#6B7280" },
+  Apprentice: { caption: "20 – 99 XP", primary: "#2563EB" },
+  "AI Ninja": { caption: "100 – 299 XP", primary: "#7C3AED" },
+  "Sensei Candidate": { caption: "300+ XP — eval pending", primary: "#EAB308" },
+  "AI Sensei": { caption: "300+ XP + evaluation", primary: "#D4A017" },
+};
+
+for (const name of NINJA_CARD_ORDER) {
+  const meta = NINJA_META[name];
+  LEVEL_CARD_PRESETS[name] = preset(name, meta.caption, {
+    primary: meta.primary,
+    accents: [meta.primary],
+    titleColor: "#FEFEFE",
+    captionColor: "#A1A1AA",
+    grid: grid(NINJA_VOIDS[name], []),
+  });
+}
+
 export const LEVEL_CARD_ORDER = [
   "Beginner",
   "Learner",
@@ -105,7 +128,15 @@ export const LEVEL_CARD_ORDER = [
   "Oracle",
 ] as const;
 
-export type LevelCardName = (typeof LEVEL_CARD_ORDER)[number];
+export type ReadingCardName = (typeof LEVEL_CARD_ORDER)[number];
+export type LevelCardName = ReadingCardName | NinjaCardName;
+
+export const CARD_CATEGORIES = {
+  reading: { label: "Reading", order: LEVEL_CARD_ORDER },
+  ninja: { label: "Ninja", order: NINJA_CARD_ORDER },
+} as const;
+
+export type CardCategoryId = keyof typeof CARD_CATEGORIES;
 
 export function getPreset(level?: string): LevelCardPreset | undefined {
   if (!level) return undefined;

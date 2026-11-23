@@ -1,20 +1,73 @@
 /** Canvas face/back painter for WebGL textures. */
 
 import { buildCells, contentPad, gridMetrics, scatterFillsInContent } from "./grid";
+import { getImage } from "./load-image";
+import { isNinjaLevel } from "./ninja-voids";
 import { BEGINNER_COLOR_FILLS } from "./presets";
-import type { AccentCell, GridSpec, LevelCardTheme } from "./types";
+import type { AccentCell, GridCell, GridSpec, LevelCardTheme } from "./types";
 
-/** Chromatic levels only — Sage/Oracle body maps stay static. */
+/** Chromatic levels only — Sage/Oracle/Ninja stay static. */
 export function flickerFillsFor(
   theme: LevelCardTheme,
   level?: string,
 ): string[] | null {
+  if (isNinjaLevel(level)) return null;
   if (theme.grid.bodyCells?.length) return null;
   if (level === "Beginner") return BEGINNER_COLOR_FILLS;
   const fills = theme.grid.accentCells
     .map((a) => a.fill ?? theme.accents[a.colorIndex ?? -1])
     .filter((f): f is string => typeof f === "string");
   return fills.length > 0 ? fills : null;
+}
+
+/** Mosaic bounds in face design units (includes side pads when present). */
+function mosaicBounds(cells: GridCell[]) {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  for (const cell of cells) {
+    left = Math.min(left, cell.x);
+    top = Math.min(top, cell.y);
+    right = Math.max(right, cell.x + cell.w);
+    bottom = Math.max(bottom, cell.y + cell.h);
+  }
+  return { left, top, w: right - left, h: bottom - top };
+}
+
+function drawArtTile(
+  ctx: CanvasRenderingContext2D,
+  cell: GridCell,
+  img: HTMLImageElement,
+  bounds: { left: number; top: number; w: number; h: number },
+) {
+  const scale = Math.max(bounds.w / img.naturalWidth, bounds.h / img.naturalHeight);
+  const drawnW = img.naturalWidth * scale;
+  const drawnH = img.naturalHeight * scale;
+  const ox = bounds.left + (bounds.w - drawnW) / 2;
+  const oy = bounds.top + (bounds.h - drawnH) / 2;
+
+  const sx = (cell.x - ox) / scale;
+  const sy = (cell.y - oy) / scale;
+  const sw = cell.w / scale;
+  const sh = cell.h / scale;
+
+  ctx.save();
+  roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 6);
+  ctx.clip();
+  ctx.drawImage(img, sx, sy, sw, sh, cell.x, cell.y, cell.w, cell.h);
+  ctx.restore();
+}
+
+function strokeEmboss(ctx: CanvasRenderingContext2D, cell: GridCell) {
+  roundRect(ctx, cell.x + 1.2, cell.y + 1.2, cell.w - 2.4, cell.h - 2.4, 5);
+  ctx.strokeStyle = "rgba(255,255,255,0.28)";
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  roundRect(ctx, cell.x + 2.2, cell.y + 2.2, cell.w - 3.2, cell.h - 3.2, 4);
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
 }
 
 export type FacePaintModel = {
@@ -31,6 +84,14 @@ export type FacePaintOpts = {
   mini?: boolean;
   /** Crop/scale art to fill the canvas (lab faces). */
   fit?: boolean;
+  /** Transparent covers over a Ninja art panel (voids = still covered). */
+  panelReveal?: boolean;
+  /** Override theme voids (Ninja reveal tweens). */
+  voidCells?: Array<[number, number]>;
+  /** Face art URL (ninja mosaic tiles). */
+  artSrc?: string;
+  /** Mark/logo URL; replaces the default asterisk. */
+  markSrc?: string;
 };
 
 /** Back content axis — GLTF UVs are authored to this, not texture mid (1024). */
@@ -113,6 +174,31 @@ function embossAsterisk(
   drawAsterisk(ctx, cx + 2, cy + 2.5, len, stroke + 2, "rgba(0,0,0,0.5)");
   drawAsterisk(ctx, cx - 1.5, cy - 2, len, stroke - 2, "rgba(255,255,255,0.2)");
   drawAsterisk(ctx, cx, cy, len, stroke, color);
+}
+
+/** Custom mark image with emboss offsets, or default asterisk. */
+function embossMark(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  color: string,
+  logo: HTMLImageElement | null,
+  asterisk: { len: number; stroke: number },
+) {
+  if (logo && logo.naturalWidth > 0) {
+    const size = asterisk.len * 2;
+    const draw = (dx: number, dy: number, alpha: number) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(logo, cx - size / 2 + dx, cy - size / 2 + dy, size, size);
+      ctx.restore();
+    };
+    draw(2, 2.5, 0.5);
+    draw(-1.5, -2, 0.22);
+    draw(0, 0, 1);
+    return;
+  }
+  embossAsterisk(ctx, cx, cy, asterisk.len, asterisk.stroke, color);
 }
 
 type FaceLayout = {
@@ -226,23 +312,29 @@ export function buildFaceModel(
   title: string,
   caption: string,
   level: string | undefined,
-  opts?: { flat?: boolean; accentCells?: AccentCell[] },
+  opts?: {
+    flat?: boolean;
+    accentCells?: AccentCell[];
+    voidCells?: Array<[number, number]>;
+  },
 ): FacePaintModel {
   const gridSpec0 = opts?.flat ? theme.grid : gltfFaceGrid(theme.grid);
   const { cellW, stepX } = gridMetrics(gridSpec0);
   const { contentCols } = contentPad(gridSpec0);
 
-  let gridSpec = gridSpec0;
+  let gridSpec = opts?.voidCells
+    ? { ...gridSpec0, voidCells: opts.voidCells }
+    : gridSpec0;
   if (opts?.accentCells) {
-    gridSpec = { ...gridSpec0, accentCells: opts.accentCells };
+    gridSpec = { ...gridSpec, accentCells: opts.accentCells };
   } else if (level === "Beginner") {
     const accents: AccentCell[] = scatterFillsInContent(
       BEGINNER_COLOR_FILLS,
-      gridSpec0.voidCells,
+      gridSpec.voidCells,
       contentCols,
-      gridSpec0.rows,
+      gridSpec.rows,
     ).map(({ c, r, fill }) => ({ c, r, fill }));
-    gridSpec = { ...gridSpec0, accentCells: accents };
+    gridSpec = { ...gridSpec, accentCells: accents };
   }
 
   const cells = buildCells(gridSpec, theme.primary, theme.accents, {
@@ -250,7 +342,9 @@ export function buildFaceModel(
   });
 
   return {
-    theme,
+    theme: opts?.voidCells
+      ? { ...theme, grid: { ...theme.grid, voidCells: opts.voidCells } }
+      : theme,
     title,
     caption,
     level,
@@ -260,34 +354,71 @@ export function buildFaceModel(
   };
 }
 
-/** Opaque mosaic layer (background + embossed tiles). */
+/** Mosaic layer (opaque tiles, or transparent panel-reveal covers for Ninja GL). */
 export function paintFaceMosaic(
   canvas: HTMLCanvasElement,
   model: FacePaintModel,
   opts?: FacePaintOpts,
 ) {
   const px = canvas.width;
-  const ctx = canvas.getContext("2d", { alpha: false });
+  const panelReveal = !!opts?.panelReveal;
+  // Alpha context is sticky on first getContext — always request it.
+  const ctx = canvas.getContext("2d", { alpha: true });
   if (!ctx) return;
-  const layout = faceLayout(model, px, opts);
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = model.theme.background;
-  ctx.fillRect(0, 0, px, px);
+  if (panelReveal) {
+    ctx.clearRect(0, 0, px, px);
+  } else {
+    ctx.fillStyle = model.theme.background;
+    ctx.fillRect(0, 0, px, px);
+  }
+
+  const artUrl = opts?.artSrc;
+  const art =
+    isNinjaLevel(model.level) && !panelReveal && artUrl ? getImage(artUrl) : null;
+  const bounds = art && model.cells.length ? mosaicBounds(model.cells) : null;
+
+  const baseGrid =
+    opts?.fit || opts?.mini ? model.theme.grid : gltfFaceGrid(model.theme.grid);
+  const gridForPaint = opts?.voidCells
+    ? { ...baseGrid, voidCells: opts.voidCells }
+    : baseGrid;
+
+  const cells = panelReveal
+    ? buildCells(gridForPaint, model.theme.primary, model.theme.accents, {
+        includeCarve: true,
+      })
+    : opts?.voidCells
+      ? buildCells(gridForPaint, model.theme.primary, model.theme.accents, {
+          includeCarve: false,
+        })
+      : model.cells;
+
+  const paintModel = panelReveal ? { ...model, cells } : model;
+  const layout = faceLayout(paintModel, px, opts);
 
   withFaceClip(ctx, layout, () => {
-    for (const cell of model.cells) {
-      roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 6);
-      ctx.fillStyle = cell.fill;
-      ctx.fill();
-      roundRect(ctx, cell.x + 1.2, cell.y + 1.2, cell.w - 2.4, cell.h - 2.4, 5);
-      ctx.strokeStyle = "rgba(255,255,255,0.28)";
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-      roundRect(ctx, cell.x + 2.2, cell.y + 2.2, cell.w - 3.2, cell.h - 3.2, 4);
-      ctx.strokeStyle = "rgba(0,0,0,0.35)";
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
+    for (const cell of cells) {
+      if (panelReveal) {
+        if (cell.carve) {
+          roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 6);
+          ctx.fillStyle = model.theme.background;
+          ctx.fill();
+          strokeEmboss(ctx, cell);
+        } else {
+          strokeEmboss(ctx, cell);
+        }
+        continue;
+      }
+      if (art && bounds) {
+        drawArtTile(ctx, cell, art, bounds);
+      } else {
+        roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 6);
+        ctx.fillStyle = cell.fill;
+        ctx.fill();
+      }
+      strokeEmboss(ctx, cell);
     }
   });
 }
@@ -296,8 +427,10 @@ function drawEmbossedChrome(
   ctx: CanvasRenderingContext2D,
   model: FacePaintModel,
   layout: FaceLayout,
+  markSrc?: string,
 ) {
   const { theme } = model;
+  const markLogo = markSrc ? getImage(markSrc) : null;
   withFaceClip(ctx, layout, () => {
     const embossText = (text: string, x: number, y: number, fill: string, font: string) => {
       ctx.font = font;
@@ -334,7 +467,7 @@ function drawEmbossedChrome(
       );
     }
 
-    embossAsterisk(ctx, model.markX, 1840, 70, 16, theme.markColor);
+    embossMark(ctx, model.markX, 1840, theme.markColor, markLogo, { len: 70, stroke: 16 });
   });
 }
 
@@ -350,7 +483,7 @@ export function paintFaceChrome(
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, px, px);
   if (opts?.mini) return;
-  drawEmbossedChrome(ctx, model, faceLayout(model, px, opts));
+  drawEmbossedChrome(ctx, model, faceLayout(model, px, opts), opts?.markSrc);
 }
 
 /** Stamp mosaic then chrome onto an opaque destination (compat path). */
@@ -376,7 +509,7 @@ export function paintFace(
   if (opts?.mini) return;
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) return;
-  drawEmbossedChrome(ctx, model, faceLayout(model, canvas.width, opts));
+  drawEmbossedChrome(ctx, model, faceLayout(model, canvas.width, opts), opts?.markSrc);
 }
 
 function setFont(
@@ -403,6 +536,8 @@ export type BackPaintOpts = {
   fullName: string;
   memberSince: string;
   showMark?: boolean;
+  /** Mark/logo URL; replaces the default asterisk. */
+  markSrc?: string;
   /** Flat/lab faces are not UV-mirrored. */
   mirror?: boolean;
 };
@@ -527,17 +662,51 @@ function drawEmbossedBackType(
     embossCentered(meta, yMeta, theme.metaColor, "0.18em");
   }
   if (showMark) {
-    embossAsterisk(ctx, cx, yMark, 58, 13, theme.markColor);
+    const markLogo = opts.markSrc ? getImage(opts.markSrc) : null;
+    embossMark(ctx, cx, yMark, theme.markColor, markLogo, { len: 58, stroke: 13 });
   }
 }
 
-/** Full back: plate + embossed type. */
-export function paintBack(canvas: HTMLCanvasElement, opts: BackPaintOpts) {
+/** Near-black matte plate — soft grain only (type lives on the chrome layer). */
+export function paintBackPlate(canvas: HTMLCanvasElement) {
   const px = canvas.width;
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = opts.theme.background;
+  ctx.fillStyle = "#050505";
   ctx.fillRect(0, 0, px, px);
+
+  ctx.save();
+  for (let y = 0; y < px; y += 2) {
+    const t = ((y * 47) ^ (y * 13)) & 255;
+    ctx.globalAlpha = 0.02 + (t / 255) * 0.035;
+    ctx.fillStyle = t & 1 ? "#1a1a1c" : "#000000";
+    ctx.fillRect(0, y, px, 2);
+  }
+  ctx.restore();
+
+  const falloff = ctx.createRadialGradient(px * 0.5, px * 0.48, px * 0.2, px * 0.5, px * 0.5, px * 0.78);
+  falloff.addColorStop(0, "rgba(255,255,255,0.03)");
+  falloff.addColorStop(0.55, "rgba(0,0,0,0)");
+  falloff.addColorStop(1, "rgba(0,0,0,0.35)");
+  ctx.fillStyle = falloff;
+  ctx.fillRect(0, 0, px, px);
+}
+
+/** Transparent embossed type — same chrome deck treatment as the front. */
+export function paintBackChrome(canvas: HTMLCanvasElement, opts: BackPaintOpts) {
+  const px = canvas.width;
+  const ctx = canvas.getContext("2d", { alpha: true });
+  if (!ctx) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, px, px);
   drawEmbossedBackType(ctx, opts, prepareBackCtx(ctx, px, opts));
+}
+
+/** Full back: matte black plate + embossed type (flat / compat). */
+export function paintBack(canvas: HTMLCanvasElement, opts: BackPaintOpts) {
+  paintBackPlate(canvas);
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) return;
+  drawEmbossedBackType(ctx, opts, prepareBackCtx(ctx, canvas.width, opts));
 }

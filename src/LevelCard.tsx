@@ -39,6 +39,8 @@ export function LevelCard(props: LevelCardProps) {
                   title={resolved.title}
                   caption={resolved.caption}
                   level={props.level}
+                  artSrc={resolved.artSrc}
+                  markSrc={resolved.markSrc}
                   mini={props.mini}
                   flicker={props.flicker}
                   size={size}
@@ -50,6 +52,7 @@ export function LevelCard(props: LevelCardProps) {
                   fullName={resolved.fullName}
                   memberSince={resolved.memberSince}
                   showMark={resolved.showMark}
+                  markSrc={resolved.markSrc}
                   size={size}
                 />
               )}

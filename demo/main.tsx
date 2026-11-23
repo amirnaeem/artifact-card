@@ -2,19 +2,28 @@ import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   LevelCard,
-  LEVEL_CARD_ORDER,
+  CARD_CATEGORIES,
   LEVEL_CARD_PRESETS,
+  type CardCategoryId,
   type LevelCardName,
 } from "@amirnaeem/artifact-card";
 import "../src/styles.css";
 import "./demo.css";
 
 function App() {
-  const [level, setLevel] = useState<LevelCardName>("Learner");
+  const [category, setCategory] = useState<CardCategoryId>("reading");
+  const order = CARD_CATEGORIES[category].order;
+  const [level, setLevel] = useState<LevelCardName>(order[0]!);
   const [flicker, setFlicker] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [msg, setMsg] = useState("");
   const active = LEVEL_CARD_PRESETS[level];
+
+  const selectCategory = (id: CardCategoryId) => {
+    setCategory(id);
+    setLevel(CARD_CATEGORIES[id].order[0]!);
+    setFlicker(false);
+  };
 
   return (
     <div className="demo">
@@ -22,8 +31,8 @@ function App() {
         <p className="demo__eyebrow">Demo</p>
         <h1>Artifact Card</h1>
         <p className="demo__lede">
-          Pick an award level, flip the card, or turn on flicker to watch the
-          accent tiles move.
+          Pick a category and award level, flip the card, or turn on flicker to
+          watch the accent tiles move.
         </p>
       </header>
 
@@ -38,18 +47,38 @@ function App() {
               <span className="demo__awards-cap">{active?.caption}</span>
             </p>
           </div>
-          <label className="demo__switch">
-            <input
-              type="checkbox"
-              checked={flicker}
-              onChange={(e) => setFlicker(e.target.checked)}
-            />
-            <span>Flicker</span>
-          </label>
+          {category === "reading" ? (
+            <label className="demo__switch">
+              <input
+                type="checkbox"
+                checked={flicker}
+                onChange={(e) => setFlicker(e.target.checked)}
+              />
+              <span>Flicker</span>
+            </label>
+          ) : null}
+        </div>
+
+        <div className="demo__cats" role="tablist" aria-label="Award categories">
+          {(Object.keys(CARD_CATEGORIES) as CardCategoryId[]).map((id) => {
+            const selected = id === category;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={selected ? "demo__cat demo__cat--on" : "demo__cat"}
+                onClick={() => selectCategory(id)}
+              >
+                {CARD_CATEGORIES[id].label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="demo__ladder" role="listbox" aria-label="Award levels">
-          {LEVEL_CARD_ORDER.map((name, i) => {
+          {order.map((name, i) => {
             const preset = LEVEL_CARD_PRESETS[name];
             const selected = name === level;
             return (
@@ -107,12 +136,6 @@ function App() {
               />
             </div>
             <figcaption>Back</figcaption>
-          </figure>
-          <figure className="demo__sample">
-            <div className="demo__sample-slot">
-              <LevelCard level={level} flicker={flicker} mini size={72} />
-            </div>
-            <figcaption>Mini</figcaption>
           </figure>
         </div>
       </section>

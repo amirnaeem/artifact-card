@@ -1,8 +1,8 @@
 # @amirnaeem/artifact-card
 
-Themeable reading-level **award card** for React.
+Themeable React **award card** with a 3D glass shell and canvas-painted faces.
 
-Pick a level, show a name on the back, flip to explore. Accent tiles can optionally flicker. Flat and mini variants use the same art.
+Two categories: **Reading** (Beginner→Oracle) and **Ninja** (AI Curious→AI Sensei). Flip the card, optionally flicker accent tiles, and pass `artSrc` / `markSrc` for custom face art and mark.
 
 Inspired by [Artifact](https://artifact.news/).
 
@@ -64,11 +64,27 @@ export function Profile() {
 
 Tap or click the card to flip. For controlled flip: `flipped` + `onFlip`.
 
-Accent flicker is off by default:
+Accent flicker is off by default (Reading chromatic levels only):
 
 ```tsx
 <LevelCard level="Savant" flicker fullName="Ada Lovelace" memberSince="2023" />
 ```
+
+### Custom art & mark
+
+```tsx
+<LevelCard
+  level="AI Ninja"
+  artSrc="/hero.png"
+  markSrc="/mark.svg"
+  fullName="Ada Lovelace"
+  memberSince="2023"
+/>
+```
+
+- `artSrc` — face art for ninja panel + mosaic tiles (defaults to packaged ninja art).
+- `markSrc` — replaces the asterisk on front and back.
+- `showMark={false}` — hides the **back** mark only.
 
 ### Vite
 
@@ -107,17 +123,19 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `level` | `string` | — | Award preset (`Learner`, `Scholar`, …) |
+| `level` | `string` | — | Award preset (Reading or Ninja name) |
 | `theme` | `Partial<LevelCardTheme>` | — | Deep-merged over the level preset |
 | `title` | `string` | preset name | Front title |
 | `caption` | `string` | preset caption | Front caption |
 | `fullName` | `string` | — | Back identity (skipped when empty) |
 | `memberSince` | `string` | — | Back meta (skipped when empty) |
 | `brand` | `string` | `""` | Optional back brand line |
-| `showMark` | `boolean` | `true` | Back asterisk |
+| `showMark` | `boolean` | `true` | Show back mark (asterisk or `markSrc`) |
+| `artSrc` | `string` | packaged ninja art | Face art URL (ninja panel + mosaic) |
+| `markSrc` | `string` | — | Mark/logo URL (replaces asterisk on front + back) |
 | `side` | `"front" \| "back"` | — | Flat single face |
 | `mini` | `boolean` | `false` | Mosaic-only thumb |
-| `flicker` | `boolean` | `false` | Animate accent tiles (Beginner→Savant; respects `prefers-reduced-motion`) |
+| `flicker` | `boolean` | `false` | Animate accent tiles (Beginner→Savant; no-op for Ninja; respects `prefers-reduced-motion`) |
 | `flipped` | `boolean` | — | Controlled flip |
 | `defaultFlipped` | `boolean` | `false` | Uncontrolled initial flip |
 | `onFlip` | `(flipped: boolean) => void` | — | Flip callback |
@@ -135,7 +153,11 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 
 ---
 
-## Award levels
+## Categories
+
+Use `CARD_CATEGORIES` in host UIs; pass any preset name as `level`.
+
+### Reading
 
 | Level | Caption |
 | --- | --- |
@@ -147,6 +169,18 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 | `Savant` | 100+ reads |
 | `Sage` | 250+ reads |
 | `Oracle` | 350+ reads |
+
+### Ninja
+
+Ninja faces paint art into mosaic tiles over a panel in the glass shell; gaps fill in as ranks rise (animated on level change).
+
+| Level | Caption |
+| --- | --- |
+| `AI Curious` | 0 – 19 XP |
+| `Apprentice` | 20 – 99 XP |
+| `AI Ninja` | 100 – 299 XP |
+| `Sensei Candidate` | 300+ XP — eval pending |
+| `AI Sensei` | 300+ XP + evaluation |
 
 ---
 
@@ -185,9 +219,10 @@ Set them on `:root` (or a host wrapper) to match your product fonts.
 | `LevelCard` | Main component |
 | `LevelCardFace` / `LevelCardBack` | Standalone faces |
 | `resolveCard` / `mergeTheme` / `defaultTheme` | Theme resolution |
-| `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `getPreset` | Presets |
+| `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `NINJA_CARD_ORDER` / `CARD_CATEGORIES` / `getPreset` | Presets |
 | `paintFace` / `paintFaceMosaic` / `paintFaceChrome` / `paintBack` / `buildFaceModel` / `compositeFace` | Advanced paint |
 | `CARD_GLTF_URL` | Packaged shell URL |
+| `NINJA_ART_URL` | Default face art when `artSrc` is omitted (ninja levels) |
 | Types | `LevelCardProps`, `LevelCardTheme`, `LevelCardName`, … |
 
 ---
@@ -203,7 +238,7 @@ npm install
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Demo at [http://localhost:5173](http://localhost:5173) |
-| `npm run check` | Typecheck + paint/grid self-checks |
+| `npm run check` | Typecheck + paint/grid/security self-checks |
 | `npm run typecheck` | Typecheck only |
 | `npm run build` | Emit library `dist/` |
 | `npm run build:demo` | Build demo for GitHub Pages |

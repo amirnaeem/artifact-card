@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useRef } from "react";
 import { assignRef, bufferPx } from "./lib/canvas";
+import { loadImage, onImageLoad } from "./load-image";
 import { paintBack } from "./paint";
 import type { LevelCardTheme } from "./types";
 
@@ -9,13 +10,14 @@ type Props = {
   fullName: string;
   memberSince: string;
   showMark?: boolean;
+  markSrc?: string;
   /** CSS box size in px; buffer uses devicePixelRatio. */
   size?: number;
   className?: string;
 };
 
 export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function LevelCardBack(
-  { theme, brand, fullName, memberSince, showMark = true, size = 320, className },
+  { theme, brand, fullName, memberSince, showMark = true, markSrc, size = 320, className },
   ref,
 ) {
   const local = useRef<HTMLCanvasElement>(null);
@@ -34,15 +36,26 @@ export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function Level
         fullName,
         memberSince,
         showMark,
+        markSrc,
         mirror: false,
       });
     };
     paint();
     void document.fonts.ready.then(paint);
+
+    let unsub: (() => void) | undefined;
+    if (markSrc) {
+      unsub = onImageLoad(markSrc, paint);
+      void loadImage(markSrc)
+        .then(paint)
+        .catch(() => {});
+    }
+
     return () => {
       cancelled = true;
+      unsub?.();
     };
-  }, [theme, brand, fullName, memberSince, showMark, size]);
+  }, [theme, brand, fullName, memberSince, showMark, markSrc, size]);
 
   return (
     <canvas

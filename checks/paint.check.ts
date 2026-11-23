@@ -27,6 +27,20 @@ assert(BACK_CX === 834, `BACK_CX drift: ${BACK_CX}`);
 const branded = resolveCard({ level: "Sage", brand: "ARTIFACT", showMark: false });
 assert(branded.brand === "ARTIFACT" && branded.showMark === false, "brand/showMark overrides failed");
 
+{
+  const plain = resolveCard({ level: "Learner" });
+  assert(plain.artSrc === undefined && plain.markSrc === undefined, "artSrc/markSrc default undefined");
+  const custom = resolveCard({
+    level: "AI Ninja",
+    artSrc: "/hero.png",
+    markSrc: "/mark.svg",
+    showMark: false,
+  });
+  assert(custom.artSrc === "/hero.png", "artSrc pass-through");
+  assert(custom.markSrc === "/mark.svg", "markSrc pass-through");
+  assert(custom.showMark === false, "showMark false with markSrc");
+}
+
 assert(defaultTheme.type.brandSize >= 72, "back brand size bumped");
 assert(defaultTheme.type.nameSize >= 104, "back name size bumped");
 assert(defaultTheme.type.metaSize >= 42, "back meta size bumped");
