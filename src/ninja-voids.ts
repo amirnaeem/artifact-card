@@ -69,10 +69,6 @@ export function revealRank(ladderId: string, level?: string): number {
   return (order as readonly string[]).indexOf(level);
 }
 
-export function ninjaRankIndex(level: string): number {
-  return revealRank("ninja", level);
-}
-
 export function ninjaRevealedCount(
   rankIndex: number,
   seed = NINJA_VOID_SEED,
@@ -100,10 +96,6 @@ export function ninjaVoidsForRank(
   seed = NINJA_VOID_SEED,
 ): Array<[number, number]> {
   return ninjaVoidsForRevealed(ninjaRevealedCount(rankIndex, seed), seed);
-}
-
-export function isNinjaLevel(level?: string): level is NinjaCardName {
-  return revealRank("ninja", level) >= 0;
 }
 
 /** Ladder id shared by both levels, if they are on the same progressive reveal ladder. */

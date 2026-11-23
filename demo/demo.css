@@ -178,25 +178,6 @@ body {
   font-weight: 500;
 }
 
-.demo__switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  margin-top: 2px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  user-select: none;
-}
-
-.demo__switch input {
-  width: 0.95rem;
-  height: 0.95rem;
-  accent-color: var(--ink);
-  cursor: pointer;
-}
-
 .demo__ladder {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

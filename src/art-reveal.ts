@@ -6,7 +6,7 @@ import {
   ninjaVoidsForRevealed,
 } from "./ninja-voids";
 
-export const ART_REVEAL_MS = NINJA_REVEAL_MS;
+const ART_REVEAL_MS = NINJA_REVEAL_MS;
 
 export type ArtRevealPrev = { ladder: string; rank: number };
 

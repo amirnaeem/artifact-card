@@ -3,6 +3,11 @@ import {
   CARD_CATEGORIES,
   LEVEL_CARD_ORDER,
   NINJA_CARD_ORDER,
+  categoryForLevel,
+  getCategory,
+  registerCategory,
+  unregisterCategory,
+  type CardCategory,
   type NinjaCardName,
   type ReadingCardName,
 } from "./categories";
@@ -27,14 +32,6 @@ import {
   SEEKER_VOIDS,
   type FillCell,
 } from "./svg-fills";
-
-import {
-  categoryForLevel,
-  getCategory,
-  registerCategory,
-  unregisterCategory,
-  type CardCategory,
-} from "./categories";
 
 export {
   CARD_CATEGORIES,
