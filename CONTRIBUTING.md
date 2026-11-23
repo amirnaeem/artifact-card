@@ -18,7 +18,9 @@ npm run build
 npm run dev   # demo at http://localhost:5173
 ```
 
-CI runs `check` + `build` on every PR. Please keep those green.
+CI runs `audit` + `check` + `build` on every PR. Please keep those green.
+
+Add asserts in `checks/` for public API or security changes.
 
 ## Scope
 

@@ -1,9 +1,10 @@
 /**
- * Self-check: size / theme.grid caps reject hostile unbounded input.
+ * Self-check: size / theme.grid caps + asset URL safety.
  * Run: npx tsx checks/security.check.ts
  */
 import assert from "node:assert/strict";
 import { bufferPx, clampCardSize, MAX_CARD_SIZE_PX } from "../src/lib/canvas";
+import { isSafeAssetUrl } from "../src/load-image";
 import { defaultTheme, mergeTheme, sanitizeGrid } from "../src/theme";
 
 assert.equal(clampCardSize(1e9), MAX_CARD_SIZE_PX);
@@ -40,6 +41,19 @@ const g = sanitizeGrid({
 assert.equal(g.cols, 1);
 assert.equal(g.rows, 64);
 assert.ok(Number.isFinite(g.cell));
+
+assert.equal(isSafeAssetUrl("/mark.svg"), true);
+assert.equal(isSafeAssetUrl("https://cdn.example/a.png"), true);
+assert.equal(isSafeAssetUrl("http://cdn.example/a.png"), true);
+assert.equal(isSafeAssetUrl("blob:https://example/uuid"), true);
+assert.equal(isSafeAssetUrl("data:image/svg+xml;base64,abc"), true);
+assert.equal(isSafeAssetUrl("data:image/png;base64,abc"), true);
+assert.equal(isSafeAssetUrl(""), false);
+assert.equal(isSafeAssetUrl("javascript:alert(1)"), false);
+assert.equal(isSafeAssetUrl("vbscript:msg"), false);
+assert.equal(isSafeAssetUrl("file:///etc/passwd"), false);
+assert.equal(isSafeAssetUrl("//evil.example/x.png"), false);
+assert.equal(isSafeAssetUrl("data:text/html,hi"), false);
 
 console.log("security.check ok", {
   maxSize: MAX_CARD_SIZE_PX,

@@ -1,4 +1,4 @@
-/** Packaged GLTF URL (files live in dist/assets via static-copy). */
+/** Packaged asset URLs (files live in dist/assets via static-copy). */
 
 function asset(rel: string): string {
   // @vite-ignore — resolve against shipped dist/assets, do not inline.
@@ -6,3 +6,4 @@ function asset(rel: string): string {
 }
 
 export const CARD_GLTF_URL = asset("./assets/card/card.gltf");
+export const NINJA_ART_URL = asset("./assets/ninja/ninja.png");

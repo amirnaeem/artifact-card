@@ -1,4 +1,12 @@
 import type { AccentCell, LevelCardPreset, LevelCardTheme } from "./types";
+import {
+  CARD_CATEGORIES,
+  LEVEL_CARD_ORDER,
+  NINJA_CARD_ORDER,
+  type NinjaCardName,
+  type ReadingCardName,
+} from "./categories";
+import { NINJA_VOIDS } from "./ninja-voids";
 import { GRID_BASE } from "./voids";
 import {
   BEGINNER_ACCENTS,
@@ -20,6 +28,26 @@ import {
   type FillCell,
 } from "./svg-fills";
 
+import {
+  categoryForLevel,
+  getCategory,
+  registerCategory,
+  unregisterCategory,
+  type CardCategory,
+} from "./categories";
+
+export {
+  CARD_CATEGORIES,
+  LEVEL_CARD_ORDER,
+  NINJA_CARD_ORDER,
+  categoryForLevel,
+  getCategory,
+  listCategories,
+} from "./categories";
+export type { CardCategory, CardCategoryId, NinjaCardName, ReadingCardName } from "./categories";
+
+export type LevelCardName = ReadingCardName | NinjaCardName;
+
 function toAccents(cells: FillCell[]): AccentCell[] {
   return cells.map(({ c, r, fill }) => ({ c, r, fill }));
 }
@@ -36,8 +64,9 @@ function preset(
   name: string,
   caption: string,
   theme: Partial<LevelCardTheme>,
+  extra?: Pick<LevelCardPreset, "artFace" | "revealLadder">,
 ): LevelCardPreset {
-  return { name, caption, theme };
+  return { name, caption, theme, ...extra };
 }
 
 /** Beginner chroma fills (10) — positions randomized at render time. */
@@ -47,7 +76,6 @@ export const LEVEL_CARD_PRESETS: Record<string, LevelCardPreset> = {
   Beginner: preset("Beginner", "Just Joined", {
     primary: "#323232",
     accents: ["#2A19AD", "#D95DCC", "#55D054", "#B2FFA0"],
-    // accents filled dynamically in LevelCardFace (random placement)
     grid: grid(BEGINNER_VOIDS, []),
   }),
 
@@ -94,20 +122,97 @@ export const LEVEL_CARD_PRESETS: Record<string, LevelCardPreset> = {
   }),
 };
 
-export const LEVEL_CARD_ORDER = [
-  "Beginner",
-  "Learner",
-  "Seeker",
-  "Explorer",
-  "Scholar",
-  "Savant",
-  "Sage",
-  "Oracle",
-] as const;
+const NINJA_META: Record<NinjaCardName, { caption: string; primary: string }> = {
+  "AI Curious": { caption: "0 – 19 XP", primary: "#6B7280" },
+  Apprentice: { caption: "20 – 99 XP", primary: "#2563EB" },
+  "AI Ninja": { caption: "100 – 299 XP", primary: "#7C3AED" },
+  "Sensei Candidate": { caption: "300+ XP — eval pending", primary: "#EAB308" },
+  "AI Sensei": { caption: "300+ XP + evaluation", primary: "#D4A017" },
+};
 
-export type LevelCardName = (typeof LEVEL_CARD_ORDER)[number];
+const ninjaCat = CARD_CATEGORIES.ninja!;
+for (const name of NINJA_CARD_ORDER) {
+  const meta = NINJA_META[name];
+  LEVEL_CARD_PRESETS[name] = preset(
+    name,
+    meta.caption,
+    {
+      primary: meta.primary,
+      accents: [meta.primary],
+      titleColor: "#FEFEFE",
+      captionColor: "#A1A1AA",
+      grid: grid(NINJA_VOIDS[name], []),
+    },
+    { artFace: ninjaCat.artFace, revealLadder: ninjaCat.revealLadder },
+  );
+}
 
 export function getPreset(level?: string): LevelCardPreset | undefined {
   if (!level) return undefined;
   return LEVEL_CARD_PRESETS[level];
 }
+
+/** Register or replace a single level preset. */
+export function definePreset(name: string, preset: LevelCardPreset): void {
+  LEVEL_CARD_PRESETS[name] = preset;
+}
+
+/** Merge presets into the global registry. */
+export function definePresets(map: Record<string, LevelCardPreset>): void {
+  Object.assign(LEVEL_CARD_PRESETS, map);
+}
+
+/** Remove presets by level name (tests / host teardown). */
+export function undefinePresets(...names: string[]): void {
+  for (const name of names) delete LEVEL_CARD_PRESETS[name];
+}
+
+export type DefineCategoryInput = CardCategory & {
+  /** Optional presets registered atomically with the category. */
+  presets?: Record<string, LevelCardPreset>;
+};
+
+/**
+ * Register or replace a category (and optional presets).
+ * Validates non-empty unique `order`, no cross-category level collisions,
+ * and that every ordered name has a preset after merge.
+ * Replacing the same `id` (e.g. `"reading"` / `"ninja"`) is allowed.
+ */
+export function defineCategory(input: DefineCategoryInput): CardCategory {
+  const { presets, ...cat } = input;
+  if (!cat.id || !cat.order?.length) {
+    throw new Error("defineCategory requires id and a non-empty order");
+  }
+  const seen = new Set<string>();
+  for (const name of cat.order) {
+    if (seen.has(name)) {
+      throw new Error(`defineCategory("${cat.id}"): duplicate level "${name}" in order`);
+    }
+    seen.add(name);
+    const other = categoryForLevel(name);
+    if (other && other.id !== cat.id) {
+      throw new Error(
+        `defineCategory("${cat.id}"): level "${name}" already belongs to "${other.id}"`,
+      );
+    }
+    if (!presets?.[name] && !LEVEL_CARD_PRESETS[name]) {
+      throw new Error(
+        `defineCategory("${cat.id}"): missing preset for level "${name}"`,
+      );
+    }
+  }
+  if (presets) definePresets(presets);
+  return registerCategory(cat);
+}
+
+/**
+ * Remove a category and its ordered presets from the global registries.
+ * Built-ins can be restored by re-importing / re-defining them.
+ */
+export function undefineCategory(id: string): void {
+  const cat = getCategory(id);
+  if (!cat) return;
+  undefinePresets(...cat.order);
+  unregisterCategory(id);
+}
+

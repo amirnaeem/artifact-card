@@ -1,52 +1,47 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { ACCENT_FLICKER_MS, contentPad, stepAccentCells } from "./grid";
-import { assignRef, bufferPx } from "./lib/canvas";
 import {
-  buildFaceModel,
-  flickerFillsFor,
-  paintFaceChrome,
-  paintFaceMosaic,
-} from "./paint";
-import type { AccentCell, LevelCardTheme } from "./types";
+  canTweenReveal,
+  startArtRevealTween,
+  type ArtRevealPrev,
+} from "./art-reveal";
+import { assignRef, bufferPx } from "./lib/canvas";
+import { watchImage } from "./load-image";
+import { buildFaceModel, paintFaceChrome, paintFaceMosaic } from "./paint";
+import type { ResolvedCard } from "./resolve";
 
 type Props = {
-  theme: LevelCardTheme;
-  title: string;
-  caption: string;
+  resolved: ResolvedCard;
   level?: string;
   /** Crop to mosaic; hide title / caption / mark. */
   mini?: boolean;
-  /** Step-animate accent tiles. Default off. */
-  flicker?: boolean;
   /** CSS box size in px; buffer uses devicePixelRatio. */
   size?: number;
   className?: string;
 };
 
 export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function LevelCardFace(
-  { theme, title, caption, level, mini, flicker = false, size = 320, className },
+  { resolved, level, mini, size = 320, className },
   ref,
 ) {
   const mosaicRef = useRef<HTMLCanvasElement>(null);
   const chromeRef = useRef<HTMLCanvasElement>(null);
+  const prevReveal = useRef<ArtRevealPrev | null>(null);
 
   useEffect(() => {
     const mosaic = mosaicRef.current;
     if (!mosaic) return;
     let cancelled = false;
-    const fills = flicker ? flickerFillsFor(theme, level) : null;
-    const { contentCols } = contentPad(theme.grid);
-    let accents: AccentCell[] | undefined = fills
-      ? stepAccentCells(fills, theme.grid.voidCells, contentCols, theme.grid.rows)
-      : undefined;
+    const { theme, title, caption, artSrc, markSrc, artFace, revealLadder, revealRank } =
+      resolved;
+    const ladder = revealLadder;
+    const rank = revealRank;
 
-    const paintOpts = { mini, fit: !mini };
-    // Chrome layout ignores accent steps so type stays put while tiles flicker.
+    const paintOpts = { mini, fit: !mini, artSrc, artFace, markSrc };
     const chromeModel = mini
       ? null
       : buildFaceModel(theme, title, caption, level, { flat: true });
 
-    const paintMosaic = () => {
+    const paintMosaic = (voidCells?: Array<[number, number]>) => {
       if (cancelled || !mosaicRef.current) return;
       const px = bufferPx(size);
       mosaicRef.current.width = mosaicRef.current.height = px;
@@ -54,9 +49,9 @@ export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function Level
         mosaicRef.current,
         buildFaceModel(theme, title, caption, level, {
           flat: true,
-          accentCells: accents,
+          voidCells,
         }),
-        paintOpts,
+        { ...paintOpts, voidCells },
       );
     };
 
@@ -67,26 +62,40 @@ export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function Level
       paintFaceChrome(chromeRef.current, chromeModel, paintOpts);
     };
 
-    paintMosaic();
     paintChrome();
     void document.fonts.ready.then(paintChrome);
 
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let timer = 0;
-    if (fills && !reduce) {
-      timer = window.setInterval(() => {
-        accents = stepAccentCells(fills, theme.grid.voidCells, contentCols, theme.grid.rows);
-        paintMosaic();
-      }, ACCENT_FLICKER_MS);
+
+    let cancelTween = () => {};
+    const prev = prevReveal.current;
+    if (canTweenReveal(artFace, ladder, rank, prev)) {
+      prevReveal.current = { ladder: ladder!, rank };
+      cancelTween = startArtRevealTween({
+        fromRank: prev!.rank,
+        toRank: rank,
+        reduce,
+        paint: paintMosaic,
+      });
+    } else {
+      prevReveal.current =
+        artFace && ladder && rank >= 0 ? { ladder, rank } : null;
+      paintMosaic();
     }
+
+    const unsubs = [
+      watchImage(artSrc, () => paintMosaic()),
+      watchImage(markSrc, () => paintChrome()),
+    ];
 
     return () => {
       cancelled = true;
-      if (timer) window.clearInterval(timer);
+      cancelTween();
+      for (const u of unsubs) u();
     };
-  }, [theme, title, caption, level, mini, flicker, size]);
+  }, [resolved, level, mini, size]);
 
   return (
     <div
@@ -94,7 +103,7 @@ export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function Level
         .filter(Boolean)
         .join(" ")}
       role="img"
-      aria-label={mini ? title : `${title} — ${caption}`}
+      aria-label={mini ? resolved.title : `${resolved.title} — ${resolved.caption}`}
     >
       <canvas
         ref={(node) => {

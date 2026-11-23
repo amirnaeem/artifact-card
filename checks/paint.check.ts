@@ -27,6 +27,49 @@ assert(BACK_CX === 834, `BACK_CX drift: ${BACK_CX}`);
 const branded = resolveCard({ level: "Sage", brand: "ARTIFACT", showMark: false });
 assert(branded.brand === "ARTIFACT" && branded.showMark === false, "brand/showMark overrides failed");
 
+{
+  const plain = resolveCard({ level: "Learner" });
+  assert(plain.artFace === false, "reading is not art face");
+  assert(plain.artSrc === undefined && plain.markSrc === undefined, "artSrc/markSrc default undefined");
+  assert(plain.revealLadder === undefined && plain.revealRank === -1, "no reveal ladder");
+
+  const ninja = resolveCard({ level: "AI Ninja" });
+  assert(ninja.artFace === true, "ninja preset is art face");
+  assert(ninja.categoryId === "ninja", "ninja categoryId");
+  assert(typeof ninja.artSrc === "string" && ninja.artSrc.length > 0, "ninja default artSrc");
+  assert(ninja.revealLadder === "ninja" && ninja.revealRank >= 0, "ninja reveal ladder");
+
+  const reading = resolveCard({ level: "Savant", category: "reading" });
+  assert(reading.categoryId === "reading" && reading.artFace === false, "reading mosaic");
+
+  const custom = resolveCard({
+    level: "AI Ninja",
+    artSrc: "/hero.png",
+    markSrc: "/mark.svg",
+    showMark: false,
+  });
+  assert(custom.artSrc === "/hero.png", "artSrc override");
+  assert(custom.markSrc === "/mark.svg", "markSrc pass-through");
+  assert(custom.showMark === false, "showMark false with markSrc");
+
+  // Unknown level + artSrc → art face without ladder (generic host levels).
+  const host = resolveCard({
+    level: "Custom Tier",
+    title: "Custom Tier",
+    caption: "Host-defined",
+    artSrc: "/custom.png",
+    theme: { primary: "#112233" },
+  });
+  assert(host.artFace === true, "artSrc alone enables art face");
+  assert(host.artSrc === "/custom.png", "host artSrc");
+  assert(host.revealLadder === undefined, "unknown level has no ladder");
+  assert(host.title === "Custom Tier" && host.theme.primary === "#112233", "unknown level theme/title");
+
+  // Reading + artSrc → art face (opt-in), still no ninja ladder.
+  const readingArt = resolveCard({ level: "Learner", artSrc: "/overlay.png" });
+  assert(readingArt.artFace === true && readingArt.revealLadder === undefined, "reading+artSrc");
+}
+
 assert(defaultTheme.type.brandSize >= 72, "back brand size bumped");
 assert(defaultTheme.type.nameSize >= 104, "back name size bumped");
 assert(defaultTheme.type.metaSize >= 42, "back meta size bumped");

@@ -5,7 +5,10 @@ import { LevelCardGl } from "./LevelCardGl";
 import { resolveCard } from "./resolve";
 import type { LevelCardProps } from "./types";
 
-/** GLTF shell by default; `side` / `mini` for flat canvas faces (lab, thumbs). */
+/**
+ * Award level card — GLTF glass shell by default; pass `side` / `mini` for flat canvas.
+ * Bring your own ladder with `defineCategory` / `definePresets`, or use built-in Reading / Ninja.
+ */
 export function LevelCard(props: LevelCardProps) {
   const resolved = resolveCard(props);
   const flat = props.mini || props.side === "front" || props.side === "back";
@@ -35,23 +38,13 @@ export function LevelCard(props: LevelCardProps) {
             <div className="level-card__side level-card__side--solo">
               {face ? (
                 <LevelCardFace
-                  theme={resolved.theme}
-                  title={resolved.title}
-                  caption={resolved.caption}
+                  resolved={resolved}
                   level={props.level}
                   mini={props.mini}
-                  flicker={props.flicker}
                   size={size}
                 />
               ) : (
-                <LevelCardBack
-                  theme={resolved.theme}
-                  brand={resolved.brand}
-                  fullName={resolved.fullName}
-                  memberSince={resolved.memberSince}
-                  showMark={resolved.showMark}
-                  size={size}
-                />
+                <LevelCardBack resolved={resolved} size={size} />
               )}
             </div>
           </div>

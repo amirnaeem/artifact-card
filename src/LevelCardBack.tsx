@@ -1,21 +1,18 @@
 import { forwardRef, useEffect, useRef } from "react";
 import { assignRef, bufferPx } from "./lib/canvas";
+import { watchImage } from "./load-image";
 import { paintBack } from "./paint";
-import type { LevelCardTheme } from "./types";
+import type { ResolvedCard } from "./resolve";
 
 type Props = {
-  theme: LevelCardTheme;
-  brand: string;
-  fullName: string;
-  memberSince: string;
-  showMark?: boolean;
+  resolved: ResolvedCard;
   /** CSS box size in px; buffer uses devicePixelRatio. */
   size?: number;
   className?: string;
 };
 
 export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function LevelCardBack(
-  { theme, brand, fullName, memberSince, showMark = true, size = 320, className },
+  { resolved, size = 320, className },
   ref,
 ) {
   const local = useRef<HTMLCanvasElement>(null);
@@ -24,6 +21,7 @@ export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function Level
     const canvas = local.current;
     if (!canvas) return;
     let cancelled = false;
+    const { theme, brand, fullName, memberSince, showMark, markSrc } = resolved;
     const paint = () => {
       if (cancelled || !local.current) return;
       const px = bufferPx(size);
@@ -34,15 +32,19 @@ export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function Level
         fullName,
         memberSince,
         showMark,
+        markSrc,
         mirror: false,
       });
     };
     paint();
     void document.fonts.ready.then(paint);
+    const unsub = watchImage(markSrc, paint);
+
     return () => {
       cancelled = true;
+      unsub();
     };
-  }, [theme, brand, fullName, memberSince, showMark, size]);
+  }, [resolved, size]);
 
   return (
     <canvas
@@ -52,7 +54,7 @@ export const LevelCardBack = forwardRef<HTMLCanvasElement, Props>(function Level
       }}
       className={["level-card__canvas", "level-card__back", className].filter(Boolean).join(" ")}
       role="img"
-      aria-label={`${brand || "Card"} for ${fullName || "member"}`}
+      aria-label={`${resolved.brand || "Card"} for ${resolved.fullName || "member"}`}
     />
   );
 });

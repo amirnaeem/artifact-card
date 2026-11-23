@@ -66,10 +66,26 @@ export type LevelCardPreset = {
   name: string;
   caption: string;
   theme: Partial<LevelCardTheme>;
+  /**
+   * Paint face art into mosaic tiles / under-panel gaps.
+   * Also enabled when the host passes `artSrc`.
+   */
+  artFace?: boolean;
+  /**
+   * Progressive mosaic reveal ladder id (e.g. `"ninja"`).
+   * Rank changes within the same ladder animate void fill-in.
+   */
+  revealLadder?: string;
 };
 
 export type LevelCardProps = {
+  /**
+   * Award level name (any preset, or a custom host name with `title` / `theme`).
+   * Reading and Ninja are two built-in categories; more can be added via `defineCategory`.
+   */
   level?: string;
+  /** Category id (`reading`, `ninja`, …). Inferred from `level` when omitted. */
+  category?: string;
   theme?: Partial<LevelCardTheme>;
   title?: string;
   caption?: string;
@@ -77,13 +93,23 @@ export type LevelCardProps = {
   memberSince?: string;
   /** Back brand line; omitted when empty (no default). */
   brand?: string;
-  /** Draw the back asterisk mark. Default true. */
+  /** Show the back mark (asterisk or `markSrc`). Default true. */
   showMark?: boolean;
+  /**
+   * Face art URL. Enables art face when set.
+   * Art-face categories use `defaultArtSrc` when omitted; missing/unsafe URLs fall back to mosaic.
+   */
+  artSrc?: string;
+  /** Mark/logo URL; replaces the default asterisk on front + back. */
+  markSrc?: string;
   side?: "front" | "back";
   /** Mosaic-only face (no title/caption); cropped to the tile grid. */
   mini?: boolean;
-  /** Step-animate accent tiles (Beginner→Savant). Default off. */
-  flicker?: boolean;
+  /**
+   * Local preset map (wins over the global registry for this card only).
+   * Use with `defineCategory` / `definePresets` for host award tracks.
+   */
+  presets?: Record<string, LevelCardPreset>;
   flipped?: boolean;
   defaultFlipped?: boolean;
   onFlip?: (flipped: boolean) => void;

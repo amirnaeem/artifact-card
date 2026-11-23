@@ -87,7 +87,7 @@
   height: 100%;
 }
 
-/* Mosaic under type — flicker only redraws the mosaic canvas. */
+/* Mosaic under type. */
 .level-card__face-stack {
   position: absolute;
   inset: 0;

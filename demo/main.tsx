@@ -2,19 +2,29 @@ import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   LevelCard,
-  LEVEL_CARD_ORDER,
+  listCategories,
   LEVEL_CARD_PRESETS,
+  type CardCategoryId,
   type LevelCardName,
 } from "@amirnaeem/artifact-card";
 import "../src/styles.css";
 import "./demo.css";
 
 function App() {
-  const [level, setLevel] = useState<LevelCardName>("Learner");
-  const [flicker, setFlicker] = useState(false);
+  const categories = listCategories();
+  const [category, setCategory] = useState<CardCategoryId>(categories[0]!.id);
+  const cat = categories.find((c) => c.id === category) ?? categories[0]!;
+  const order = cat.order;
+  const [level, setLevel] = useState<LevelCardName>(order[0]!);
   const [flipped, setFlipped] = useState(false);
   const [msg, setMsg] = useState("");
   const active = LEVEL_CARD_PRESETS[level];
+
+  const selectCategory = (id: CardCategoryId) => {
+    setCategory(id);
+    const next = listCategories().find((c) => c.id === id);
+    setLevel((next?.order[0] ?? order[0]!) as LevelCardName);
+  };
 
   return (
     <div className="demo">
@@ -22,8 +32,7 @@ function App() {
         <p className="demo__eyebrow">Demo</p>
         <h1>Artifact Card</h1>
         <p className="demo__lede">
-          Pick an award level, flip the card, or turn on flicker to watch the
-          accent tiles move.
+          Pick a category and award level, or flip the card to see the back.
         </p>
       </header>
 
@@ -38,18 +47,28 @@ function App() {
               <span className="demo__awards-cap">{active?.caption}</span>
             </p>
           </div>
-          <label className="demo__switch">
-            <input
-              type="checkbox"
-              checked={flicker}
-              onChange={(e) => setFlicker(e.target.checked)}
-            />
-            <span>Flicker</span>
-          </label>
+        </div>
+
+        <div className="demo__cats" role="tablist" aria-label="Award categories">
+          {categories.map((c) => {
+            const selected = c.id === category;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={selected ? "demo__cat demo__cat--on" : "demo__cat"}
+                onClick={() => selectCategory(c.id)}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="demo__ladder" role="listbox" aria-label="Award levels">
-          {LEVEL_CARD_ORDER.map((name, i) => {
+          {order.map((name, i) => {
             const preset = LEVEL_CARD_PRESETS[name];
             const selected = name === level;
             return (
@@ -73,8 +92,8 @@ function App() {
       <section className="demo__panel demo__stage" aria-label="3D card">
         <span className="demo__label demo__stage-label">Glass shell</span>
         <LevelCard
+          category={category}
           level={level}
-          flicker={flicker}
           fullName="Ada Lovelace"
           memberSince="2023"
           flipped={flipped}
@@ -92,13 +111,14 @@ function App() {
         <div className="demo__row">
           <figure className="demo__sample">
             <div className="demo__sample-slot">
-              <LevelCard level={level} flicker={flicker} side="front" size={200} />
+              <LevelCard category={category} level={level} side="front" size={200} />
             </div>
             <figcaption>Front</figcaption>
           </figure>
           <figure className="demo__sample">
             <div className="demo__sample-slot">
               <LevelCard
+                category={category}
                 level={level}
                 side="back"
                 size={200}
@@ -107,12 +127,6 @@ function App() {
               />
             </div>
             <figcaption>Back</figcaption>
-          </figure>
-          <figure className="demo__sample">
-            <div className="demo__sample-slot">
-              <LevelCard level={level} flicker={flicker} mini size={72} />
-            </div>
-            <figcaption>Mini</figcaption>
           </figure>
         </div>
       </section>
