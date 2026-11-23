@@ -28,12 +28,19 @@ import {
   type FillCell,
 } from "./svg-fills";
 
+import {
+  categoryForLevel,
+  getCategory,
+  registerCategory,
+  unregisterCategory,
+  type CardCategory,
+} from "./categories";
+
 export {
   CARD_CATEGORIES,
   LEVEL_CARD_ORDER,
   NINJA_CARD_ORDER,
   categoryForLevel,
-  defineCategory,
   getCategory,
   listCategories,
 } from "./categories";
@@ -144,3 +151,68 @@ export function getPreset(level?: string): LevelCardPreset | undefined {
   if (!level) return undefined;
   return LEVEL_CARD_PRESETS[level];
 }
+
+/** Register or replace a single level preset. */
+export function definePreset(name: string, preset: LevelCardPreset): void {
+  LEVEL_CARD_PRESETS[name] = preset;
+}
+
+/** Merge presets into the global registry. */
+export function definePresets(map: Record<string, LevelCardPreset>): void {
+  Object.assign(LEVEL_CARD_PRESETS, map);
+}
+
+/** Remove presets by level name (tests / host teardown). */
+export function undefinePresets(...names: string[]): void {
+  for (const name of names) delete LEVEL_CARD_PRESETS[name];
+}
+
+export type DefineCategoryInput = CardCategory & {
+  /** Optional presets registered atomically with the category. */
+  presets?: Record<string, LevelCardPreset>;
+};
+
+/**
+ * Register or replace a category (and optional presets).
+ * Validates non-empty unique `order`, no cross-category level collisions,
+ * and that every ordered name has a preset after merge.
+ * Replacing the same `id` (e.g. `"reading"` / `"ninja"`) is allowed.
+ */
+export function defineCategory(input: DefineCategoryInput): CardCategory {
+  const { presets, ...cat } = input;
+  if (!cat.id || !cat.order?.length) {
+    throw new Error("defineCategory requires id and a non-empty order");
+  }
+  const seen = new Set<string>();
+  for (const name of cat.order) {
+    if (seen.has(name)) {
+      throw new Error(`defineCategory("${cat.id}"): duplicate level "${name}" in order`);
+    }
+    seen.add(name);
+    const other = categoryForLevel(name);
+    if (other && other.id !== cat.id) {
+      throw new Error(
+        `defineCategory("${cat.id}"): level "${name}" already belongs to "${other.id}"`,
+      );
+    }
+    if (!presets?.[name] && !LEVEL_CARD_PRESETS[name]) {
+      throw new Error(
+        `defineCategory("${cat.id}"): missing preset for level "${name}"`,
+      );
+    }
+  }
+  if (presets) definePresets(presets);
+  return registerCategory(cat);
+}
+
+/**
+ * Remove a category and its ordered presets from the global registries.
+ * Built-ins can be restored by re-importing / re-defining them.
+ */
+export function undefineCategory(id: string): void {
+  const cat = getCategory(id);
+  if (!cat) return;
+  undefinePresets(...cat.order);
+  unregisterCategory(id);
+}
+

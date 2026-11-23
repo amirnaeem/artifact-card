@@ -6,6 +6,7 @@ export { LevelCardBack } from "./LevelCardBack";
 
 export { defaultTheme, mergeTheme } from "./theme";
 export { resolveCard } from "./resolve";
+export type { ResolvedCard } from "./resolve";
 export {
   LEVEL_CARD_PRESETS,
   LEVEL_CARD_ORDER,
@@ -16,6 +17,10 @@ export {
   categoryForLevel,
   listCategories,
   defineCategory,
+  undefineCategory,
+  definePreset,
+  definePresets,
+  undefinePresets,
 } from "./presets";
 export type {
   LevelCardName,
@@ -23,6 +28,7 @@ export type {
   ReadingCardName,
   CardCategoryId,
   CardCategory,
+  DefineCategoryInput,
 } from "./presets";
 
 export { CARD_GLTF_URL, NINJA_ART_URL } from "./assets";

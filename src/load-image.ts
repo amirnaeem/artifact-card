@@ -84,3 +84,13 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
   });
   return e.promise;
 }
+
+/** Subscribe + kick a load; calls `cb` when the image is ready (or already cached). */
+export function watchImage(url: string | undefined, cb: () => void): () => void {
+  if (!url || !isSafeAssetUrl(url)) return () => {};
+  const unsub = onImageLoad(url, cb);
+  void loadImage(url)
+    .then(cb)
+    .catch(() => {});
+  return unsub;
+}

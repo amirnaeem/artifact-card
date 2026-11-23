@@ -21,15 +21,19 @@ export { NINJA_CARD_ORDER } from "./ninja-voids";
 /**
  * One award track (Reading, Ninja, …).
  * Presets inherit `artFace` / `revealLadder` / art defaults from their category.
+ *
+ * When `artFace` is true, set `defaultArtSrc` so the panel is never empty —
+ * without a safe art URL, resolve falls back to a color mosaic.
  */
 export type CardCategory = {
   id: string;
   label: string;
-  /** Level names in rank order (low → high). */
+  /** Level names in rank order (low → high). Must be unique and each have a preset. */
   order: readonly string[];
-  /** Chromatic mosaics may flicker in host UIs. */
-  flicker?: boolean;
-  /** Default art-face for levels in this category. */
+  /**
+   * Default art-face for levels in this category.
+   * Prefer setting `defaultArtSrc` when true so the panel is never empty.
+   */
   artFace?: boolean;
   /** Progressive reveal ladder id (usually same as `id`). */
   revealLadder?: string;
@@ -42,7 +46,6 @@ export const CARD_CATEGORIES: Record<string, CardCategory> = {
     id: "reading",
     label: "Reading",
     order: LEVEL_CARD_ORDER,
-    flicker: true,
   },
   ninja: {
     id: "ninja",
@@ -84,14 +87,40 @@ export function categoryForLevel(level?: string): CardCategory | undefined {
 }
 
 /**
- * Register or replace a category (for host apps / future packs).
- * Syncs `revealLadder` → `REVEAL_LADDERS` when set.
+ * Register or replace a category structure (no preset map).
+ * Prefer `defineCategory` from the package root — it also registers presets and validates.
  */
-export function defineCategory(cat: CardCategory): CardCategory {
+export function registerCategory(cat: CardCategory): CardCategory {
   if (!cat.id || !cat.order?.length) {
     throw new Error("defineCategory requires id and a non-empty order");
+  }
+  const seen = new Set<string>();
+  for (const name of cat.order) {
+    if (seen.has(name)) {
+      throw new Error(`defineCategory("${cat.id}"): duplicate level "${name}" in order`);
+    }
+    seen.add(name);
+    const other = categoryForLevel(name);
+    if (other && other.id !== cat.id) {
+      throw new Error(
+        `defineCategory("${cat.id}"): level "${name}" already belongs to "${other.id}"`,
+      );
+    }
   }
   CARD_CATEGORIES[cat.id] = cat;
   syncRevealLadder(cat);
   return cat;
+}
+
+/** @deprecated Use registerCategory / package `defineCategory`. */
+export const defineCategory = registerCategory;
+
+/** Remove a category and its reveal ladder entry (tests / host teardown). */
+export function unregisterCategory(id: string): void {
+  const cat = CARD_CATEGORIES[id];
+  if (!cat) return;
+  if (cat.revealLadder && REVEAL_LADDERS[cat.revealLadder] === cat.order) {
+    delete REVEAL_LADDERS[cat.revealLadder];
+  }
+  delete CARD_CATEGORIES[id];
 }

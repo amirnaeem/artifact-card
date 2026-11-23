@@ -2,22 +2,8 @@
 
 import { buildCells, contentPad, gridMetrics, scatterFillsInContent } from "./grid";
 import { getImage } from "./load-image";
-import { BEGINNER_COLOR_FILLS, getPreset } from "./presets";
+import { BEGINNER_COLOR_FILLS } from "./presets";
 import type { AccentCell, GridCell, GridSpec, LevelCardTheme } from "./types";
-
-/** Chromatic color mosaics only — art faces / body maps stay static. */
-export function flickerFillsFor(
-  theme: LevelCardTheme,
-  level?: string,
-): string[] | null {
-  if (getPreset(level)?.artFace) return null;
-  if (theme.grid.bodyCells?.length) return null;
-  if (level === "Beginner") return BEGINNER_COLOR_FILLS;
-  const fills = theme.grid.accentCells
-    .map((a) => a.fill ?? theme.accents[a.colorIndex ?? -1])
-    .filter((f): f is string => typeof f === "string");
-  return fills.length > 0 ? fills : null;
-}
 
 /** Mosaic bounds in face design units (includes side pads when present). */
 function mosaicBounds(cells: GridCell[]) {

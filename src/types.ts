@@ -95,15 +95,21 @@ export type LevelCardProps = {
   brand?: string;
   /** Show the back mark (asterisk or `markSrc`). Default true. */
   showMark?: boolean;
-  /** Face art URL. Enables art face when set; art-face presets default to packaged art. */
+  /**
+   * Face art URL. Enables art face when set.
+   * Art-face categories use `defaultArtSrc` when omitted; missing/unsafe URLs fall back to mosaic.
+   */
   artSrc?: string;
   /** Mark/logo URL; replaces the default asterisk on front + back. */
   markSrc?: string;
   side?: "front" | "back";
   /** Mosaic-only face (no title/caption); cropped to the tile grid. */
   mini?: boolean;
-  /** Step-animate accent tiles (Beginner→Savant). Default off. */
-  flicker?: boolean;
+  /**
+   * Local preset map (wins over the global registry for this card only).
+   * Use with `defineCategory` / `definePresets` for host award tracks.
+   */
+  presets?: Record<string, LevelCardPreset>;
   flipped?: boolean;
   defaultFlipped?: boolean;
   onFlip?: (flipped: boolean) => void;

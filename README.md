@@ -1,27 +1,26 @@
 # @amirnaeem/artifact-card
 
-Themeable React **award card** with a 3D glass shell and canvas-painted faces.
+Themeable React **award level card** — 3D glass shell, canvas-painted faces, host-defined categories.
 
-Built-in categories: **Reading** (Beginner→Oracle) and **Ninja** (AI Curious→AI Sensei). More tracks can be added with `defineCategory`. Flip the card, optionally flicker accent tiles, and pass `artSrc` / `markSrc` for custom art and mark.
+Use the built-in **Reading** and **Ninja** packs, or register your own ladder with `defineCategory`.
 
 Inspired by [Artifact](https://artifact.news/).
 
 [![npm version](https://img.shields.io/npm/v/@amirnaeem/artifact-card.svg)](https://www.npmjs.com/package/@amirnaeem/artifact-card)
 [![license](https://img.shields.io/github/license/amirnaeem/artifact-card.svg)](./LICENSE)
-[![node](https://img.shields.io/node/v/@amirnaeem/artifact-card.svg)](./package.json)
 [![demo](https://img.shields.io/badge/demo-GitHub%20Pages-black.svg)](https://amirnaeem.github.io/artifact-card/)
 
 **Demo:** [amirnaeem.github.io/artifact-card](https://amirnaeem.github.io/artifact-card/) · **npm:** [@amirnaeem/artifact-card](https://www.npmjs.com/package/@amirnaeem/artifact-card)
 
 <p align="center">
-  <img src="assets/beginner-badge.png" alt="Beginner — Just Joined" width="120" />
-  <img src="assets/learner-badge.png" alt="Learner — First Read" width="120" />
-  <img src="assets/seeker-badge.png" alt="Seeker — 10+ reads" width="120" />
-  <img src="assets/explorer-badge.png" alt="Explorer — 25+ reads" width="120" />
-  <img src="assets/scholar-badge.png" alt="Scholar — 50+ reads" width="120" />
-  <img src="assets/savant-badge.png" alt="Savant — 100+ reads" width="120" />
-  <img src="assets/sage-badge.png" alt="Sage — 250+ reads" width="120" />
-  <img src="assets/oracle-badge.png" alt="Oracle — 350+ reads" width="120" />
+  <img src="assets/beginner-badge.png" alt="Beginner" width="100" />
+  <img src="assets/learner-badge.png" alt="Learner" width="100" />
+  <img src="assets/seeker-badge.png" alt="Seeker" width="100" />
+  <img src="assets/explorer-badge.png" alt="Explorer" width="100" />
+  <img src="assets/scholar-badge.png" alt="Scholar" width="100" />
+  <img src="assets/savant-badge.png" alt="Savant" width="100" />
+  <img src="assets/sage-badge.png" alt="Sage" width="100" />
+  <img src="assets/oracle-badge.png" alt="Oracle" width="100" />
 </p>
 
 ---
@@ -37,11 +36,9 @@ npm install @amirnaeem/artifact-card three
 | `react` / `react-dom` | ^18 or ^19 |
 | `three` | ^0.160 |
 
-`react` and `react-dom` are assumed already in your app. Install `three` alongside this package.
-
 ---
 
-## Use in your project
+## Quick start
 
 ```tsx
 import { LevelCard } from "@amirnaeem/artifact-card";
@@ -58,39 +55,11 @@ export function Profile() {
 }
 ```
 
-1. Import the component.
+1. Import `LevelCard`.
 2. Import `styles.css` once (app root or layout).
-3. Pass a `level` (and optional `category`, identity, art/mark props).
+3. Pass a `level` — category is inferred when omitted.
 
-Tap or click the card to flip. For controlled flip: `flipped` + `onFlip`.
-
-Accent flicker is off by default (categories with `flicker: true`, e.g. Reading):
-
-```tsx
-<LevelCard category="reading" level="Savant" flicker fullName="Ada Lovelace" />
-```
-
-### Custom art & mark
-
-```tsx
-<LevelCard
-  category="ninja"
-  level="AI Ninja"
-  artSrc="/hero.png"
-  markSrc="/mark.svg"
-  fullName="Ada Lovelace"
-  memberSince="2023"
-/>
-```
-
-- `artSrc` — enables an art face (mosaic tiles + panel). Art-face categories default to packaged art when omitted.
-- `markSrc` — replaces the asterisk on front and back.
-- `showMark={false}` — hides the **back** mark only.
-- Custom `level` names work with `title` / `theme` / `artSrc` — behavior comes from category + resolved props.
-
-### Vite
-
-Works out of the box with the install above.
+Tap the card to flip. Controlled flip: `flipped` + `onFlip`.
 
 ### Next.js (App Router)
 
@@ -105,19 +74,154 @@ export function ProfileCard() {
 }
 ```
 
-- Mark the consumer as a **Client Component** (`"use client"`).
-- If the bundler fails to resolve the package, add it to `transpilePackages` in `next.config`:
+Add to `next.config` if the bundler cannot resolve the package:
 
 ```js
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+export default {
   transpilePackages: ["@amirnaeem/artifact-card"],
 };
-
-export default nextConfig;
 ```
 
-Assets resolve from the package via `import.meta.url` — you do **not** copy files into `public/`.
+Assets ship inside the package — you do not copy files into `public/`.
+
+---
+
+## Built-in categories
+
+| Id | Style | Levels |
+| --- | --- | --- |
+| `reading` | Color mosaic | Beginner → Learner → Seeker → Explorer → Scholar → Savant → Sage → Oracle |
+| `ninja` | Art face + progressive reveal | AI Curious → Apprentice → AI Ninja → Sensei Candidate → AI Sensei |
+
+```tsx
+<LevelCard category="reading" level="Savant" fullName="Ada Lovelace" />
+<LevelCard category="ninja" level="AI Ninja" fullName="Ada Lovelace" />
+```
+
+Pass `level` alone and the category is inferred from the first matching pack. An explicit `category` wins even if that level is not in its `order`.
+
+### Reading captions
+
+| Level | Caption |
+| --- | --- |
+| Beginner | Just Joined |
+| Learner | First Read |
+| Seeker | 10+ reads |
+| Explorer | 25+ reads |
+| Scholar | 50+ reads |
+| Savant | 100+ reads |
+| Sage | 250+ reads |
+| Oracle | 350+ reads |
+
+### Ninja captions
+
+| Level | Caption |
+| --- | --- |
+| AI Curious | 0 – 19 XP |
+| Apprentice | 20 – 99 XP |
+| AI Ninja | 100 – 299 XP |
+| Sensei Candidate | 300+ XP — eval pending |
+| AI Sensei | 300+ XP + evaluation |
+
+Ninja ranks animate mosaic fill-in within the same ladder. Switching Reading ↔ Ninja hard-cuts (no cross-ladder tween).
+
+---
+
+## Bring your own category
+
+Register a track once at app startup. Every name in `order` needs a preset (inline `presets` or prior `definePresets`).
+
+```tsx
+import {
+  LevelCard,
+  defineCategory,
+  listCategories,
+} from "@amirnaeem/artifact-card";
+
+defineCategory({
+  id: "guild",
+  label: "Guild",
+  order: ["Novice", "Member", "Elder"],
+  presets: {
+    Novice: {
+      name: "Novice",
+      caption: "Just joined",
+      theme: { primary: "#323232", accents: ["#2A19AD"] },
+    },
+    Member: {
+      name: "Member",
+      caption: "Active",
+      theme: { primary: "#F0E013", accents: ["#2A19AD"] },
+    },
+    Elder: {
+      name: "Elder",
+      caption: "Veteran",
+      theme: { primary: "#D95DCC", accents: ["#55D054"] },
+    },
+  },
+});
+
+export function GuildCard() {
+  return (
+    <>
+      {listCategories().map((cat) => (
+        <span key={cat.id}>{cat.label}</span>
+      ))}
+      <LevelCard category="guild" level="Member" fullName="Ada Lovelace" />
+    </>
+  );
+}
+```
+
+**Rules**
+
+- `order` must be non-empty with unique names.
+- Level names cannot overlap another category (unless you replace the same `id`).
+- Replacing `"reading"` / `"ninja"` is allowed — that overrides the built-in pack.
+- Art-face packs should set `artFace: true`, `defaultArtSrc`, and usually `revealLadder`. Without a usable art URL the card falls back to a color mosaic.
+- One-off overrides without mutating the global registry:
+
+```tsx
+<LevelCard
+  category="guild"
+  level="Member"
+  presets={{
+    Member: {
+      name: "Member",
+      caption: "Scoped override",
+      theme: { primary: "#00aa88" },
+    },
+  }}
+/>
+```
+
+Related helpers: `definePreset`, `definePresets`, `undefineCategory`, `undefinePresets`, `getCategory`, `categoryForLevel`.
+
+---
+
+## Art & mark
+
+```tsx
+<LevelCard
+  category="ninja"
+  level="AI Ninja"
+  artSrc="/hero.png"
+  markSrc="/mark.svg"
+  fullName="Ada Lovelace"
+  memberSince="2023"
+/>
+```
+
+| Prop | Behavior |
+| --- | --- |
+| `artSrc` | Enables art face (mosaic + panel). Art-face categories use `defaultArtSrc` when omitted. |
+| `markSrc` | Replaces the asterisk on front and back. |
+| `showMark={false}` | Hides the **back** mark only; front still draws mark/logo. |
+
+Host `artSrc` must be a safe URL (`http(s)`, `blob`, `data:image`, or a relative path). Unsafe schemes fall through to `defaultArtSrc` or a color mosaic.
+
+Custom levels work with `title` / `theme` / `artSrc` — no preset required if you pass everything you need.
 
 ---
 
@@ -125,20 +229,20 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `level` | `string` | — | Award level name (preset or custom) |
-| `category` | `string` | inferred from `level` | Category id (`reading`, `ninja`, …) |
+| `level` | `string` | — | Award level name |
+| `category` | `string` | inferred | Category id (`reading`, `ninja`, …) |
+| `presets` | `Record<string, LevelCardPreset>` | — | Scoped preset map for this card only |
 | `theme` | `Partial<LevelCardTheme>` | — | Deep-merged over the level preset |
-| `title` | `string` | preset name | Front title |
+| `title` | `string` | preset / `level` / `"Award"` | Front title |
 | `caption` | `string` | preset caption | Front caption |
 | `fullName` | `string` | — | Back identity (skipped when empty) |
 | `memberSince` | `string` | — | Back meta (skipped when empty) |
 | `brand` | `string` | `""` | Optional back brand line |
-| `showMark` | `boolean` | `true` | Show back mark (asterisk or `markSrc`) |
-| `artSrc` | `string` | category `defaultArtSrc` for art faces | Face art URL; enables art mosaic/panel when set |
-| `markSrc` | `string` | — | Mark/logo URL (replaces asterisk on front + back) |
-| `side` | `"front" \| "back"` | — | Flat single face |
+| `showMark` | `boolean` | `true` | Show back mark |
+| `artSrc` | `string` | category `defaultArtSrc` | Face art URL |
+| `markSrc` | `string` | — | Mark/logo URL |
+| `side` | `"front" \| "back"` | — | Flat single face (no GL shell) |
 | `mini` | `boolean` | `false` | Mosaic-only thumb |
-| `flicker` | `boolean` | `false` | Animate accent tiles when the category allows flicker (not art faces); respects `prefers-reduced-motion` |
 | `flipped` | `boolean` | — | Controlled flip |
 | `defaultFlipped` | `boolean` | `false` | Uncontrolled initial flip |
 | `onFlip` | `(flipped: boolean) => void` | — | Flip callback |
@@ -154,70 +258,15 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 <LevelCard level="Sage" mini size={56} />
 ```
 
----
-
-## Categories
-
-Each category is an ordered ladder plus defaults (`flicker`, `artFace`, `revealLadder`, `defaultArtSrc`). Reading and Ninja ship built-in; hosts can add more.
+For custom lab UIs, resolve once and paint:
 
 ```tsx
-import {
-  LevelCard,
-  listCategories,
-  defineCategory,
-  LEVEL_CARD_PRESETS,
-} from "@amirnaeem/artifact-card";
+import { resolveCard, LevelCardFace, LevelCardBack } from "@amirnaeem/artifact-card";
 
-function CategoryTabs() {
-  return (
-    <>
-      {listCategories().map((cat) => (
-        <button key={cat.id} type="button">
-          {cat.label}
-        </button>
-      ))}
-      <LevelCard category="ninja" level="AI Ninja" fullName="Ada Lovelace" />
-    </>
-  );
-}
-
-// Later: register another track, then add matching LEVEL_CARD_PRESETS entries
-defineCategory({
-  id: "guild",
-  label: "Guild",
-  order: ["Novice", "Member", "Elder"],
-  flicker: true,
-});
+const resolved = resolveCard({ level: "Learner", fullName: "Ada" });
+<LevelCardFace resolved={resolved} level="Learner" size={200} />
+<LevelCardBack resolved={resolved} size={200} />
 ```
-
-Pass `level` alone (category is inferred) or set `category` explicitly.
-
-### Reading
-
-Color mosaic. Chromatic levels support `flicker`.
-
-| Level | Caption |
-| --- | --- |
-| `Beginner` | Just Joined |
-| `Learner` | First Read |
-| `Seeker` | 10+ reads |
-| `Explorer` | 25+ reads |
-| `Scholar` | 50+ reads |
-| `Savant` | 100+ reads |
-| `Sage` | 250+ reads |
-| `Oracle` | 350+ reads |
-
-### Ninja
-
-Art face: mosaic tiles over a panel; gaps fill in as ranks rise (animated within the ladder).
-
-| Level | Caption |
-| --- | --- |
-| `AI Curious` | 0 – 19 XP |
-| `Apprentice` | 20 – 99 XP |
-| `AI Ninja` | 100 – 299 XP |
-| `Sensei Candidate` | 300+ XP — eval pending |
-| `AI Sensei` | 300+ XP + evaluation |
 
 ---
 
@@ -236,9 +285,7 @@ Art face: mosaic tiles over a panel; gaps fill in as ranks rise (animated within
 Merge order: `defaultTheme` ← level preset ← `theme` prop.  
 Arrays (`accents`, `voidCells`, …) replace wholesale.
 
-### Fonts
-
-| Variable | Role |
+| CSS variable | Role |
 | --- | --- |
 | `--font-head` | Front title |
 | `--font-display` | Back name |
@@ -249,19 +296,24 @@ Set them on `:root` (or a host wrapper) to match your product fonts.
 
 ---
 
-## Exports
+## API surface
 
 | Export | Purpose |
 | --- | --- |
-| `LevelCard` | Main component |
-| `LevelCardFace` / `LevelCardBack` | Standalone faces |
-| `resolveCard` / `mergeTheme` / `defaultTheme` | Theme resolution |
-| `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `NINJA_CARD_ORDER` / `getPreset` | Presets |
-| `CARD_CATEGORIES` / `listCategories` / `getCategory` / `categoryForLevel` / `defineCategory` | Categories |
-| `paintFace` / `paintFaceMosaic` / `paintFaceChrome` / `paintBack` / `buildFaceModel` / `compositeFace` | Advanced paint |
-| `CARD_GLTF_URL` | Packaged shell URL |
-| `NINJA_ART_URL` | Default art for art-face categories when `artSrc` is omitted |
-| Types | `LevelCardProps`, `LevelCardTheme`, `LevelCardPreset`, `CardCategory`, `CardCategoryId`, `LevelCardName`, … |
+| `LevelCard` | Main component (GL shell by default) |
+| `LevelCardFace` / `LevelCardBack` | Flat faces from a `ResolvedCard` |
+| `resolveCard` / `ResolvedCard` | Prop → render model |
+| `defaultTheme` / `mergeTheme` | Theme helpers |
+| `LEVEL_CARD_PRESETS` / `getPreset` | Global presets |
+| `definePreset` / `definePresets` / `undefinePresets` | Register presets |
+| `CARD_CATEGORIES` / `listCategories` / `getCategory` / `categoryForLevel` | Categories |
+| `defineCategory` / `undefineCategory` | Register categories |
+| `LEVEL_CARD_ORDER` / `NINJA_CARD_ORDER` | Built-in ladders |
+| `CARD_GLTF_URL` / `NINJA_ART_URL` | Packaged asset URLs |
+| `paintFace*` / `paintBack` / `buildFaceModel` / `compositeFace` | Advanced canvas paint |
+| Types | `LevelCardProps`, `LevelCardTheme`, `LevelCardPreset`, `CardCategory`, `DefineCategoryInput`, … |
+
+`LevelCardGl` is internal and not exported.
 
 ---
 
@@ -276,14 +328,11 @@ npm install
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Demo at [http://localhost:5173](http://localhost:5173) |
-| `npm run check` | Typecheck + paint/grid/security self-checks |
-| `npm run typecheck` | Typecheck only |
+| `npm run check` | Typecheck + self-checks |
 | `npm run build` | Emit library `dist/` |
 | `npm run build:demo` | Build demo for GitHub Pages |
 
-PRs go to `main` (CI must pass). `prepublishOnly` runs `check` then `build` before publish.
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) · [SECURITY.md](./SECURITY.md)
+PRs go to `main` (CI must pass). See [CONTRIBUTING.md](./CONTRIBUTING.md) · [SECURITY.md](./SECURITY.md).
 
 ---
 

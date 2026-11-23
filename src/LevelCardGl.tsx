@@ -6,19 +6,17 @@ import {
   wantsDeviceTilt,
 } from "./lib/device-tilt";
 import { CrosshairIcon, FlipIcon, PhoneIcon } from "./ActionIcons";
-import { CARD_GLTF_URL } from "./assets";
-import { ACCENT_FLICKER_MS, contentPad, stepAccentCells } from "./grid";
-import { LevelCardFace } from "./LevelCardFace";
-import { isSafeAssetUrl, loadImage } from "./load-image";
 import {
-  NINJA_REVEAL_MS,
-  ninjaRevealedCount,
-  ninjaVoidsForRevealed,
-  sharedRevealLadder,
-} from "./ninja-voids";
+  canTweenReveal,
+  startArtRevealTween,
+  type ArtRevealPrev,
+} from "./art-reveal";
+import { CARD_GLTF_URL } from "./assets";
+import { LevelCardFace } from "./LevelCardFace";
+import { isSafeAssetUrl, watchImage } from "./load-image";
+import { sharedRevealLadder } from "./ninja-voids";
 import {
   buildFaceModel,
-  flickerFillsFor,
   paintBackChrome,
   paintBackPlate,
   paintFaceChrome,
@@ -60,8 +58,6 @@ export function LevelCardGl(props: LevelCardProps) {
   const [motionOn, setMotionOn] = useState(false);
   const api = useRef<Api | null>(null);
   const levelName = props.level ?? resolved.title;
-  const flickerOn = !!props.flicker;
-  const flickerRef = useRef(flickerOn);
 
   useEffect(() => {
     latest.current = props;
@@ -77,11 +73,9 @@ export function LevelCardGl(props: LevelCardProps) {
   }, [flipped]);
 
   useEffect(() => {
-    flickerRef.current = flickerOn;
     api.current?.setLevel(levelName, false);
   }, [
     levelName,
-    flickerOn,
     resolved.title,
     resolved.caption,
     resolved.theme.primary,
@@ -255,12 +249,9 @@ export function LevelCardGl(props: LevelCardProps) {
       let mosaicDeck: InstanceType<typeof THREE.Mesh> | null = null;
       let ninjaPanel: InstanceType<typeof THREE.Mesh> | null = null;
       let reloadPanelArt: ((artSrc?: string) => void) | null = null;
-      let ninjaRevealAnim: {
-        from: number;
-        to: number;
-        start: number;
-        level: string;
-      } | null = null;
+      let prevReveal: ArtRevealPrev | null = null;
+      let cancelRevealTween = () => {};
+      const imageUnsubs: Array<() => void> = [];
 
       const applyArtDeck = (artFace: boolean) => {
         if (mosaicDeck) {
@@ -275,18 +266,9 @@ export function LevelCardGl(props: LevelCardProps) {
 
       const paintFrontMosaic = (level: string, voidCells?: Array<[number, number]>) => {
         const r = resolveCard({ ...latest.current, level });
-        const fills =
-          flickerRef.current && !r.artFace ? flickerFillsFor(r.theme, level) : null;
-        const { contentCols } = contentPad(r.theme.grid);
-        const accentCells = fills
-          ? stepAccentCells(fills, r.theme.grid.voidCells, contentCols, r.theme.grid.rows)
-          : undefined;
         paintFaceMosaic(
           mosaicCanvas,
-          buildFaceModel(r.theme, r.title, r.caption, level, {
-            accentCells,
-            voidCells,
-          }),
+          buildFaceModel(r.theme, r.title, r.caption, level, { voidCells }),
           {
             panelReveal: r.artFace,
             voidCells,
@@ -307,42 +289,56 @@ export function LevelCardGl(props: LevelCardProps) {
       };
 
       const paintFrontNow = (level: string) => {
-        ninjaRevealAnim = null;
+        cancelRevealTween();
         currentLevel = level;
+        const r = resolveCard({ ...latest.current, level });
+        prevReveal =
+          r.artFace && r.revealLadder && r.revealRank >= 0
+            ? { ladder: r.revealLadder, rank: r.revealRank }
+            : null;
         paintFrontMosaic(level);
         paintFrontChrome(level);
       };
 
       const startArtReveal = (fromLevel: string | null, toLevel: string) => {
+        cancelRevealTween();
         const toCard = resolveCard({ ...latest.current, level: toLevel });
         const fromCard = fromLevel
           ? resolveCard({ ...latest.current, level: fromLevel })
           : null;
-        const ladder =
-          toCard.revealLadder &&
-          fromCard &&
-          sharedRevealLadder(fromLevel ?? undefined, toLevel)
-            ? toCard.revealLadder
-            : undefined;
+        const sameLadder =
+          !!toCard.revealLadder &&
+          !!fromCard &&
+          sharedRevealLadder(fromLevel ?? undefined, toLevel) === toCard.revealLadder;
         currentLevel = toLevel;
         paintFrontChrome(toLevel);
         applyArtDeck(toCard.artFace);
-        if (!toCard.artFace || !ladder || toCard.revealRank < 0) {
-          paintFrontMosaic(toLevel);
+
+        const prev: ArtRevealPrev | null =
+          sameLadder && fromCard && fromCard.revealRank >= 0 && fromCard.revealLadder
+            ? { ladder: fromCard.revealLadder, rank: fromCard.revealRank }
+            : prevReveal;
+
+        if (canTweenReveal(toCard.artFace, toCard.revealLadder, toCard.revealRank, prev)) {
+          prevReveal = { ladder: toCard.revealLadder!, rank: toCard.revealRank };
+          cancelRevealTween = startArtRevealTween({
+            fromRank: prev!.rank,
+            toRank: toCard.revealRank,
+            reduce,
+            paint: (voidCells) => {
+              if (disposed) return;
+              paintFrontMosaic(toLevel, voidCells);
+              wake();
+            },
+          });
           return;
         }
-        const to = ninjaRevealedCount(toCard.revealRank);
-        const from =
-          fromCard && fromCard.revealLadder === ladder && fromCard.revealRank >= 0
-            ? ninjaRevealedCount(fromCard.revealRank)
-            : 0;
-        if (reduce || from === to) {
-          paintFrontMosaic(toLevel);
-          return;
-        }
-        ninjaRevealAnim = { from, to, start: performance.now(), level: toLevel };
-        paintFrontMosaic(toLevel, ninjaVoidsForRevealed(from));
-        wake();
+
+        prevReveal =
+          toCard.artFace && toCard.revealLadder && toCard.revealRank >= 0
+            ? { ladder: toCard.revealLadder, rank: toCard.revealRank }
+            : null;
+        paintFrontMosaic(toLevel);
       };
 
       const paintBackNow = () => {
@@ -363,20 +359,19 @@ export function LevelCardGl(props: LevelCardProps) {
 
       paintFrontNow(levelName);
       paintBackNow();
-      {
-        const mark = latest.current.markSrc;
-        if (mark && isSafeAssetUrl(mark)) {
-          void loadImage(mark)
-            .then(() => {
-              if (disposed) return;
-              paintFrontChrome(currentLevel);
-              paintBackNow();
-              wake();
-            })
-            .catch(() => {});
-        }
-      }
-      let flickerTimer = 0;
+      imageUnsubs.push(
+        watchImage(latest.current.markSrc, () => {
+          if (disposed) return;
+          paintFrontChrome(currentLevel);
+          paintBackNow();
+          wake();
+        }),
+        watchImage(resolveCard(latest.current).artSrc, () => {
+          if (disposed) return;
+          paintFrontMosaic(currentLevel);
+          wake();
+        }),
+      );
       if (disposed) return;
 
       const faceOutward = (mesh: InstanceType<typeof THREE.Mesh>) => {
@@ -496,7 +491,7 @@ export function LevelCardGl(props: LevelCardProps) {
         };
 
         reloadPanelArt = loadPanelArt;
-        loadPanelArt(latest.current.artSrc);
+        loadPanelArt(resolveCard(latest.current).artSrc);
       }
       if (faces.back) {
         flushGlass(faces.back);
@@ -549,18 +544,21 @@ export function LevelCardGl(props: LevelCardProps) {
           paintFrontChrome(currentLevel);
           paintFrontMosaic(currentLevel);
           paintBackNow();
-          reloadPanelArt?.(latest.current.artSrc);
-          const mark = latest.current.markSrc;
-          if (mark && isSafeAssetUrl(mark)) {
-            void loadImage(mark)
-              .then(() => {
-                if (disposed) return;
-                paintFrontChrome(currentLevel);
-                paintBackNow();
-                wake();
-              })
-              .catch(() => {});
-          }
+          const r = resolveCard(latest.current);
+          reloadPanelArt?.(r.artSrc);
+          imageUnsubs.push(
+            watchImage(r.markSrc, () => {
+              if (disposed) return;
+              paintFrontChrome(currentLevel);
+              paintBackNow();
+              wake();
+            }),
+            watchImage(r.artSrc, () => {
+              if (disposed) return;
+              paintFrontMosaic(currentLevel);
+              wake();
+            }),
+          );
           wake();
         },
         setFlip: (f) => {
@@ -677,19 +675,10 @@ export function LevelCardGl(props: LevelCardProps) {
         card.rotation.y += (targetY - card.rotation.y) * Math.min(1, dt * 10);
         card.rotation.x += (targetX - card.rotation.x) * Math.min(1, dt * 10);
         card.position.y = reduce ? 0 : Math.sin(t * 1.1) * 0.03;
-        if (ninjaRevealAnim) {
-          const u = Math.min(1, (now - ninjaRevealAnim.start) / NINJA_REVEAL_MS);
-          const eased = 1 - (1 - u) ** 3;
-          const revealed =
-            ninjaRevealAnim.from + (ninjaRevealAnim.to - ninjaRevealAnim.from) * eased;
-          paintFrontMosaic(ninjaRevealAnim.level, ninjaVoidsForRevealed(revealed));
-          if (u >= 1) ninjaRevealAnim = null;
-        }
         renderer.render(scene, cam);
         const calm =
           !dragging &&
           spinLeft === 0 &&
-          !ninjaRevealAnim &&
           Math.abs(vx) + Math.abs(vy) < 0.0005 &&
           Math.abs(flipTarget - flip) < 0.002 &&
           Math.abs(targetY - card.rotation.y) < 0.002 &&
@@ -725,21 +714,13 @@ export function LevelCardGl(props: LevelCardProps) {
       });
       ro.observe(el);
       cv.addEventListener("webglcontextlost", (e) => e.preventDefault());
-      if (!reduce) {
-        flickerTimer = window.setInterval(() => {
-          if (disposed || !onScreen || document.hidden || !flickerRef.current) return;
-          if (!flickerFillsFor(resolveCard({ ...latest.current, level: currentLevel }).theme, currentLevel)) {
-            return;
-          }
-          paintFrontMosaic(currentLevel);
-          wake();
-        }, ACCENT_FLICKER_MS);
-      }
       wake();
 
       cleanup = () => {
         cancelAnimationFrame(raf);
-        if (flickerTimer) window.clearInterval(flickerTimer);
+        cancelRevealTween();
+        for (const u of imageUnsubs) u();
+        imageUnsubs.length = 0;
         running = false;
         io.disconnect();
         ro.disconnect();
@@ -786,15 +767,7 @@ export function LevelCardGl(props: LevelCardProps) {
     return (
       <div className="level-card__wrap">
         <div className="rankcard" role="img" aria-label={`${resolved.title} level card`}>
-          <LevelCardFace
-            theme={resolved.theme}
-            title={resolved.title}
-            caption={resolved.caption}
-            level={props.level}
-            artSrc={resolved.artSrc}
-            markSrc={resolved.markSrc}
-            flicker={props.flicker}
-          />
+          <LevelCardFace resolved={resolved} level={props.level} />
         </div>
       </div>
     );

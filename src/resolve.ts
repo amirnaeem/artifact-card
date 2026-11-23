@@ -1,4 +1,3 @@
-import { NINJA_ART_URL } from "./assets";
 import { categoryForLevel, getCategory } from "./categories";
 import { isSafeAssetUrl } from "./load-image";
 import { revealRank } from "./ninja-voids";
@@ -19,49 +18,63 @@ export type ResolvedCard = {
   /** Effective face art URL when `artFace` (safe URL only). */
   artSrc?: string;
   markSrc?: string;
-  /** Art mosaic / panel face (category/preset flag or host `artSrc`). */
+  /** Art mosaic / panel face (requires a safe effective art URL). */
   artFace: boolean;
   /** Progressive reveal ladder id, if any. */
   revealLadder?: string;
   /** Index in `revealLadder` order, or -1. */
   revealRank: number;
-  /** Category allows chromatic flicker. */
-  flickerAllowed: boolean;
 };
 
-function effectiveArtSrc(
-  artFace: boolean,
+/**
+ * Pick an art URL, or fall back to a color mosaic when none is usable.
+ * Host `artSrc` must pass the URL safety gate; category `defaultArtSrc` is trusted
+ * (packaged `import.meta.url` assets may be `file://` under Node).
+ */
+function resolveArt(
+  wanted: boolean,
   artSrc: string | undefined,
   defaultArtSrc: string | undefined,
-): string | undefined {
-  if (!artFace) return undefined;
-  const url = artSrc ?? defaultArtSrc ?? NINJA_ART_URL;
-  if (isSafeAssetUrl(url)) return url;
-  return artSrc ? undefined : defaultArtSrc ?? NINJA_ART_URL;
+): { artFace: boolean; artSrc?: string } {
+  if (!wanted) return { artFace: false };
+  if (artSrc) {
+    if (isSafeAssetUrl(artSrc)) return { artFace: true, artSrc };
+    if (defaultArtSrc) return { artFace: true, artSrc: defaultArtSrc };
+    return { artFace: false };
+  }
+  if (defaultArtSrc) return { artFace: true, artSrc: defaultArtSrc };
+  return { artFace: false };
 }
 
 /** Resolve preset + category + prop overrides into a concrete render model. */
 export function resolveCard(props: LevelCardProps): ResolvedCard {
-  const preset = getPreset(props.level);
+  const level = props.level;
+  const preset =
+    (level && props.presets?.[level]) || getPreset(level) || undefined;
   const category =
-    getCategory(props.category) ?? categoryForLevel(props.level) ?? undefined;
+    getCategory(props.category) ?? categoryForLevel(level) ?? undefined;
   const theme = mergeTheme(defaultTheme, preset?.theme, props.theme);
-  const artFace = !!(preset?.artFace ?? category?.artFace) || !!props.artSrc;
+  const wantedArt =
+    !!(preset?.artFace ?? category?.artFace) || !!props.artSrc;
+  const { artFace, artSrc } = resolveArt(
+    wantedArt,
+    props.artSrc,
+    category?.defaultArtSrc,
+  );
   const revealLadder = preset?.revealLadder ?? category?.revealLadder;
   return {
     theme,
-    title: props.title ?? preset?.name ?? props.level ?? "Learner",
+    title: props.title ?? preset?.name ?? level ?? "Award",
     caption: props.caption ?? preset?.caption ?? "",
     brand: props.brand ?? "",
     fullName: props.fullName ?? "",
     memberSince: props.memberSince ?? "",
     showMark: props.showMark !== false,
     categoryId: category?.id,
-    artSrc: effectiveArtSrc(artFace, props.artSrc, category?.defaultArtSrc),
+    artSrc,
     markSrc: props.markSrc,
     artFace,
     revealLadder,
-    revealRank: revealLadder ? revealRank(revealLadder, props.level) : -1,
-    flickerAllowed: !!category?.flicker && !artFace,
+    revealRank: revealLadder ? revealRank(revealLadder, level) : -1,
   };
 }
