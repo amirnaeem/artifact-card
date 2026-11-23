@@ -19,9 +19,12 @@ function App() {
   const [msg, setMsg] = useState("");
   const active = LEVEL_CARD_PRESETS[level];
 
+  const cat = CARD_CATEGORIES[category];
+  const canFlicker = !!cat?.flicker;
+
   const selectCategory = (id: CardCategoryId) => {
     setCategory(id);
-    setLevel(CARD_CATEGORIES[id].order[0]!);
+    setLevel(CARD_CATEGORIES[id].order[0]! as LevelCardName);
     setFlicker(false);
   };
 
@@ -47,7 +50,7 @@ function App() {
               <span className="demo__awards-cap">{active?.caption}</span>
             </p>
           </div>
-          {category === "reading" ? (
+          {canFlicker ? (
             <label className="demo__switch">
               <input
                 type="checkbox"
@@ -102,8 +105,9 @@ function App() {
       <section className="demo__panel demo__stage" aria-label="3D card">
         <span className="demo__label demo__stage-label">Glass shell</span>
         <LevelCard
+          category={category}
           level={level}
-          flicker={flicker}
+          flicker={canFlicker && flicker}
           fullName="Ada Lovelace"
           memberSince="2023"
           flipped={flipped}
@@ -121,13 +125,20 @@ function App() {
         <div className="demo__row">
           <figure className="demo__sample">
             <div className="demo__sample-slot">
-              <LevelCard level={level} flicker={flicker} side="front" size={200} />
+              <LevelCard
+                category={category}
+                level={level}
+                flicker={canFlicker && flicker}
+                side="front"
+                size={200}
+              />
             </div>
             <figcaption>Front</figcaption>
           </figure>
           <figure className="demo__sample">
             <div className="demo__sample-slot">
               <LevelCard
+                category={category}
                 level={level}
                 side="back"
                 size={200}

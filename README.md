@@ -124,7 +124,8 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `level` | `string` | — | Award preset (Reading or Ninja name) |
+| `level` | `string` | — | Award level name (preset or custom) |
+| `category` | `string` | inferred | Category id (`reading`, `ninja`, …) |
 | `theme` | `Partial<LevelCardTheme>` | — | Deep-merged over the level preset |
 | `title` | `string` | preset name | Front title |
 | `caption` | `string` | preset caption | Front caption |
@@ -156,7 +157,25 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 
 ## Categories
 
-Use `CARD_CATEGORIES` in host UIs; pass any preset name as `level`.
+Reading and Ninja are two built-in **categories** (more can be added later). Each category has an ordered level ladder and defaults (`flicker`, `artFace`, `revealLadder`, `defaultArtSrc`).
+
+```tsx
+import {
+  LevelCard,
+  CARD_CATEGORIES,
+  listCategories,
+  defineCategory,
+} from "@amirnaeem/artifact-card";
+
+// Host UI: iterate categories without hard-coding ids
+listCategories().map((cat) => (
+  <button key={cat.id}>{cat.label}</button>
+));
+
+<LevelCard category="ninja" level="AI Ninja" fullName="Ada Lovelace" />
+```
+
+Pass `level` alone (category is inferred) or set `category` explicitly. To add another track later, register levels + `defineCategory({ id, label, order, … })`.
 
 ### Reading
 
@@ -221,6 +240,7 @@ Set them on `:root` (or a host wrapper) to match your product fonts.
 | `LevelCardFace` / `LevelCardBack` | Standalone faces |
 | `resolveCard` / `mergeTheme` / `defaultTheme` | Theme resolution |
 | `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `NINJA_CARD_ORDER` / `CARD_CATEGORIES` / `getPreset` | Presets |
+| `listCategories` / `getCategory` / `categoryForLevel` / `defineCategory` | Category helpers |
 | `paintFace` / `paintFaceMosaic` / `paintFaceChrome` / `paintBack` / `buildFaceModel` / `compositeFace` | Advanced paint |
 | `CARD_GLTF_URL` | Packaged shell URL |
 | `NINJA_ART_URL` | Default face art when `artSrc` is omitted (ninja levels) |

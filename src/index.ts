@@ -12,8 +12,18 @@ export {
   NINJA_CARD_ORDER,
   CARD_CATEGORIES,
   getPreset,
+  getCategory,
+  categoryForLevel,
+  listCategories,
+  defineCategory,
 } from "./presets";
-export type { LevelCardName, NinjaCardName, ReadingCardName, CardCategoryId } from "./presets";
+export type {
+  LevelCardName,
+  NinjaCardName,
+  ReadingCardName,
+  CardCategoryId,
+  CardCategory,
+} from "./presets";
 
 export { CARD_GLTF_URL, NINJA_ART_URL } from "./assets";
 export {

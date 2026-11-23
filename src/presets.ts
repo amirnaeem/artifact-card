@@ -1,5 +1,12 @@
 import type { AccentCell, LevelCardPreset, LevelCardTheme } from "./types";
-import { NINJA_CARD_ORDER, NINJA_VOIDS, type NinjaCardName } from "./ninja-voids";
+import {
+  CARD_CATEGORIES,
+  LEVEL_CARD_ORDER,
+  NINJA_CARD_ORDER,
+  type NinjaCardName,
+  type ReadingCardName,
+} from "./categories";
+import { NINJA_VOIDS } from "./ninja-voids";
 import { GRID_BASE } from "./voids";
 import {
   BEGINNER_ACCENTS,
@@ -21,8 +28,18 @@ import {
   type FillCell,
 } from "./svg-fills";
 
-export { NINJA_CARD_ORDER } from "./ninja-voids";
-export type { NinjaCardName } from "./ninja-voids";
+export {
+  CARD_CATEGORIES,
+  LEVEL_CARD_ORDER,
+  NINJA_CARD_ORDER,
+  categoryForLevel,
+  defineCategory,
+  getCategory,
+  listCategories,
+} from "./categories";
+export type { CardCategory, CardCategoryId, NinjaCardName, ReadingCardName } from "./categories";
+
+export type LevelCardName = ReadingCardName | NinjaCardName;
 
 function toAccents(cells: FillCell[]): AccentCell[] {
   return cells.map(({ c, r, fill }) => ({ c, r, fill }));
@@ -40,8 +57,9 @@ function preset(
   name: string,
   caption: string,
   theme: Partial<LevelCardTheme>,
+  extra?: Pick<LevelCardPreset, "artFace" | "revealLadder">,
 ): LevelCardPreset {
-  return { name, caption, theme };
+  return { name, caption, theme, ...extra };
 }
 
 /** Beginner chroma fills (10) — positions randomized at render time. */
@@ -51,7 +69,6 @@ export const LEVEL_CARD_PRESETS: Record<string, LevelCardPreset> = {
   Beginner: preset("Beginner", "Just Joined", {
     primary: "#323232",
     accents: ["#2A19AD", "#D95DCC", "#55D054", "#B2FFA0"],
-    // accents filled dynamically in LevelCardFace (random placement)
     grid: grid(BEGINNER_VOIDS, []),
   }),
 
@@ -106,41 +123,22 @@ const NINJA_META: Record<NinjaCardName, { caption: string; primary: string }> = 
   "AI Sensei": { caption: "300+ XP + evaluation", primary: "#D4A017" },
 };
 
+const ninjaCat = CARD_CATEGORIES.ninja!;
 for (const name of NINJA_CARD_ORDER) {
   const meta = NINJA_META[name];
-  LEVEL_CARD_PRESETS[name] = {
-    ...preset(name, meta.caption, {
+  LEVEL_CARD_PRESETS[name] = preset(
+    name,
+    meta.caption,
+    {
       primary: meta.primary,
       accents: [meta.primary],
       titleColor: "#FEFEFE",
       captionColor: "#A1A1AA",
       grid: grid(NINJA_VOIDS[name], []),
-    }),
-    artFace: true,
-    revealLadder: "ninja",
-  };
+    },
+    { artFace: ninjaCat.artFace, revealLadder: ninjaCat.revealLadder },
+  );
 }
-
-export const LEVEL_CARD_ORDER = [
-  "Beginner",
-  "Learner",
-  "Seeker",
-  "Explorer",
-  "Scholar",
-  "Savant",
-  "Sage",
-  "Oracle",
-] as const;
-
-export type ReadingCardName = (typeof LEVEL_CARD_ORDER)[number];
-export type LevelCardName = ReadingCardName | NinjaCardName;
-
-export const CARD_CATEGORIES = {
-  reading: { label: "Reading", order: LEVEL_CARD_ORDER },
-  ninja: { label: "Ninja", order: NINJA_CARD_ORDER },
-} as const;
-
-export type CardCategoryId = keyof typeof CARD_CATEGORIES;
 
 export function getPreset(level?: string): LevelCardPreset | undefined {
   if (!level) return undefined;

@@ -79,7 +79,13 @@ export type LevelCardPreset = {
 };
 
 export type LevelCardProps = {
+  /**
+   * Award level name (any preset, or a custom host name with `title` / `theme`).
+   * Reading and Ninja are two built-in categories; more can be added via `defineCategory`.
+   */
   level?: string;
+  /** Category id (`reading`, `ninja`, …). Inferred from `level` when omitted. */
+  category?: string;
   theme?: Partial<LevelCardTheme>;
   title?: string;
   caption?: string;

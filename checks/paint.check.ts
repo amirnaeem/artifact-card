@@ -35,8 +35,13 @@ assert(branded.brand === "ARTIFACT" && branded.showMark === false, "brand/showMa
 
   const ninja = resolveCard({ level: "AI Ninja" });
   assert(ninja.artFace === true, "ninja preset is art face");
+  assert(ninja.categoryId === "ninja", "ninja categoryId");
   assert(typeof ninja.artSrc === "string" && ninja.artSrc.length > 0, "ninja default artSrc");
   assert(ninja.revealLadder === "ninja" && ninja.revealRank >= 0, "ninja reveal ladder");
+  assert(ninja.flickerAllowed === false, "art face disables flicker");
+
+  const reading = resolveCard({ level: "Savant", category: "reading" });
+  assert(reading.categoryId === "reading" && reading.flickerAllowed === true, "reading flicker");
 
   const custom = resolveCard({
     level: "AI Ninja",

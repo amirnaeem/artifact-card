@@ -9,6 +9,9 @@ import {
 import {
   BEGINNER_COLOR_FILLS,
   CARD_CATEGORIES,
+  categoryForLevel,
+  getCategory,
+  listCategories,
   LEVEL_CARD_ORDER,
   LEVEL_CARD_PRESETS,
   NINJA_CARD_ORDER,
@@ -177,9 +180,18 @@ for (const name of NINJA_CARD_ORDER) {
 
 {
   assert(CARD_CATEGORIES.reading && CARD_CATEGORIES.ninja, "categories reading+ninja");
-  for (const id of Object.keys(CARD_CATEGORIES) as Array<keyof typeof CARD_CATEGORIES>) {
-    for (const name of CARD_CATEGORIES[id].order) {
+  assert(listCategories().length >= 2, "listCategories");
+  assert(getCategory("reading")?.flicker === true, "reading flicker");
+  assert(getCategory("ninja")?.artFace === true, "ninja artFace default");
+  assert(categoryForLevel("Learner")?.id === "reading", "Learner → reading");
+  assert(categoryForLevel("AI Sensei")?.id === "ninja", "Sensei → ninja");
+  for (const cat of listCategories()) {
+    for (const name of cat.order) {
       assert(LEVEL_CARD_PRESETS[name], `preset missing for ${name}`);
+      const r = resolveCard({ level: name, category: cat.id });
+      assert(r.categoryId === cat.id, `${name} categoryId`);
+      if (cat.artFace) assert(r.artFace === true, `${name} inherits artFace`);
+      if (cat.flicker) assert(r.flickerAllowed === !r.artFace, `${name} flickerAllowed`);
     }
   }
   for (const name of NINJA_CARD_ORDER) {
