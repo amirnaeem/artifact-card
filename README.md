@@ -2,7 +2,7 @@
 
 Themeable React **award card** with a 3D glass shell and canvas-painted faces.
 
-Two categories: **Reading** (Beginner→Oracle) and **Ninja** (AI Curious→AI Sensei). Flip the card, optionally flicker accent tiles, and pass `artSrc` / `markSrc` for custom face art and mark.
+Built-in categories: **Reading** (Beginner→Oracle) and **Ninja** (AI Curious→AI Sensei). More tracks can be added with `defineCategory`. Flip the card, optionally flicker accent tiles, and pass `artSrc` / `markSrc` for custom art and mark.
 
 Inspired by [Artifact](https://artifact.news/).
 
@@ -60,20 +60,21 @@ export function Profile() {
 
 1. Import the component.
 2. Import `styles.css` once (app root or layout).
-3. Pass a `level` preset and optional identity props.
+3. Pass a `level` (and optional `category`, identity, art/mark props).
 
 Tap or click the card to flip. For controlled flip: `flipped` + `onFlip`.
 
-Accent flicker is off by default (Reading chromatic levels only):
+Accent flicker is off by default (categories with `flicker: true`, e.g. Reading):
 
 ```tsx
-<LevelCard level="Savant" flicker fullName="Ada Lovelace" memberSince="2023" />
+<LevelCard category="reading" level="Savant" flicker fullName="Ada Lovelace" />
 ```
 
 ### Custom art & mark
 
 ```tsx
 <LevelCard
+  category="ninja"
   level="AI Ninja"
   artSrc="/hero.png"
   markSrc="/mark.svg"
@@ -82,10 +83,10 @@ Accent flicker is off by default (Reading chromatic levels only):
 />
 ```
 
-- `artSrc` — enables an art face (mosaic tiles + panel). Art-face presets (Ninja) default to packaged art when omitted.
+- `artSrc` — enables an art face (mosaic tiles + panel). Art-face categories default to packaged art when omitted.
 - `markSrc` — replaces the asterisk on front and back.
 - `showMark={false}` — hides the **back** mark only.
-- Unknown `level` names work with `title` / `theme` / `artSrc` — behavior comes from resolved props, not a hardcoded name list.
+- Custom `level` names work with `title` / `theme` / `artSrc` — behavior comes from category + resolved props.
 
 ### Vite
 
@@ -125,7 +126,7 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
 | `level` | `string` | — | Award level name (preset or custom) |
-| `category` | `string` | inferred | Category id (`reading`, `ninja`, …) |
+| `category` | `string` | inferred from `level` | Category id (`reading`, `ninja`, …) |
 | `theme` | `Partial<LevelCardTheme>` | — | Deep-merged over the level preset |
 | `title` | `string` | preset name | Front title |
 | `caption` | `string` | preset caption | Front caption |
@@ -133,11 +134,11 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 | `memberSince` | `string` | — | Back meta (skipped when empty) |
 | `brand` | `string` | `""` | Optional back brand line |
 | `showMark` | `boolean` | `true` | Show back mark (asterisk or `markSrc`) |
-| `artSrc` | `string` | packaged art for art-face presets | Face art URL; enables art mosaic/panel when set |
+| `artSrc` | `string` | category `defaultArtSrc` for art faces | Face art URL; enables art mosaic/panel when set |
 | `markSrc` | `string` | — | Mark/logo URL (replaces asterisk on front + back) |
 | `side` | `"front" \| "back"` | — | Flat single face |
 | `mini` | `boolean` | `false` | Mosaic-only thumb |
-| `flicker` | `boolean` | `false` | Animate accent tiles (Beginner→Savant; no-op for Ninja; respects `prefers-reduced-motion`) |
+| `flicker` | `boolean` | `false` | Animate accent tiles when the category allows flicker (not art faces); respects `prefers-reduced-motion` |
 | `flipped` | `boolean` | — | Controlled flip |
 | `defaultFlipped` | `boolean` | `false` | Uncontrolled initial flip |
 | `onFlip` | `(flipped: boolean) => void` | — | Flip callback |
@@ -157,27 +158,43 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 
 ## Categories
 
-Reading and Ninja are two built-in **categories** (more can be added later). Each category has an ordered level ladder and defaults (`flicker`, `artFace`, `revealLadder`, `defaultArtSrc`).
+Each category is an ordered ladder plus defaults (`flicker`, `artFace`, `revealLadder`, `defaultArtSrc`). Reading and Ninja ship built-in; hosts can add more.
 
 ```tsx
 import {
   LevelCard,
-  CARD_CATEGORIES,
   listCategories,
   defineCategory,
+  LEVEL_CARD_PRESETS,
 } from "@amirnaeem/artifact-card";
 
-// Host UI: iterate categories without hard-coding ids
-listCategories().map((cat) => (
-  <button key={cat.id}>{cat.label}</button>
-));
+function CategoryTabs() {
+  return (
+    <>
+      {listCategories().map((cat) => (
+        <button key={cat.id} type="button">
+          {cat.label}
+        </button>
+      ))}
+      <LevelCard category="ninja" level="AI Ninja" fullName="Ada Lovelace" />
+    </>
+  );
+}
 
-<LevelCard category="ninja" level="AI Ninja" fullName="Ada Lovelace" />
+// Later: register another track, then add matching LEVEL_CARD_PRESETS entries
+defineCategory({
+  id: "guild",
+  label: "Guild",
+  order: ["Novice", "Member", "Elder"],
+  flicker: true,
+});
 ```
 
-Pass `level` alone (category is inferred) or set `category` explicitly. To add another track later, register levels + `defineCategory({ id, label, order, … })`.
+Pass `level` alone (category is inferred) or set `category` explicitly.
 
 ### Reading
+
+Color mosaic. Chromatic levels support `flicker`.
 
 | Level | Caption |
 | --- | --- |
@@ -192,7 +209,7 @@ Pass `level` alone (category is inferred) or set `category` explicitly. To add a
 
 ### Ninja
 
-Ninja faces paint art into mosaic tiles over a panel in the glass shell; gaps fill in as ranks rise (animated on level change).
+Art face: mosaic tiles over a panel; gaps fill in as ranks rise (animated within the ladder).
 
 | Level | Caption |
 | --- | --- |
@@ -239,12 +256,12 @@ Set them on `:root` (or a host wrapper) to match your product fonts.
 | `LevelCard` | Main component |
 | `LevelCardFace` / `LevelCardBack` | Standalone faces |
 | `resolveCard` / `mergeTheme` / `defaultTheme` | Theme resolution |
-| `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `NINJA_CARD_ORDER` / `CARD_CATEGORIES` / `getPreset` | Presets |
-| `listCategories` / `getCategory` / `categoryForLevel` / `defineCategory` | Category helpers |
+| `LEVEL_CARD_PRESETS` / `LEVEL_CARD_ORDER` / `NINJA_CARD_ORDER` / `getPreset` | Presets |
+| `CARD_CATEGORIES` / `listCategories` / `getCategory` / `categoryForLevel` / `defineCategory` | Categories |
 | `paintFace` / `paintFaceMosaic` / `paintFaceChrome` / `paintBack` / `buildFaceModel` / `compositeFace` | Advanced paint |
 | `CARD_GLTF_URL` | Packaged shell URL |
-| `NINJA_ART_URL` | Default face art when `artSrc` is omitted (ninja levels) |
-| Types | `LevelCardProps`, `LevelCardTheme`, `LevelCardName`, … |
+| `NINJA_ART_URL` | Default art for art-face categories when `artSrc` is omitted |
+| Types | `LevelCardProps`, `LevelCardTheme`, `LevelCardPreset`, `CardCategory`, `CardCategoryId`, `LevelCardName`, … |
 
 ---
 
