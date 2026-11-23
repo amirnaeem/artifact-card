@@ -182,6 +182,13 @@ for (const name of NINJA_CARD_ORDER) {
       assert(LEVEL_CARD_PRESETS[name], `preset missing for ${name}`);
     }
   }
+  for (const name of NINJA_CARD_ORDER) {
+    assert(LEVEL_CARD_PRESETS[name]?.artFace === true, `${name} artFace`);
+    assert(LEVEL_CARD_PRESETS[name]?.revealLadder === "ninja", `${name} revealLadder`);
+  }
+  for (const name of LEVEL_CARD_ORDER) {
+    assert(!LEVEL_CARD_PRESETS[name]?.artFace, `${name} is color mosaic`);
+  }
   assert(typeof NINJA_ART_URL === "string" && NINJA_ART_URL.length > 0, "NINJA_ART_URL export");
 }
 

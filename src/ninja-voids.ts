@@ -57,16 +57,30 @@ export function ninjaRevealOrder(
   return shuffle(allContentCells(contentCols, rows), mulberry32(seed));
 }
 
+/** Ladder id → ordered level names for progressive art reveal. */
+export const REVEAL_LADDERS: Record<string, readonly string[]> = {
+  ninja: NINJA_CARD_ORDER,
+};
+
+export function revealRank(ladderId: string, level?: string): number {
+  if (!level) return -1;
+  const order = REVEAL_LADDERS[ladderId];
+  if (!order) return -1;
+  return (order as readonly string[]).indexOf(level);
+}
+
 export function ninjaRankIndex(level: string): number {
-  return (NINJA_CARD_ORDER as readonly string[]).indexOf(level);
+  return revealRank("ninja", level);
 }
 
 export function ninjaRevealedCount(
   rankIndex: number,
   seed = NINJA_VOID_SEED,
 ): number {
+  if (rankIndex < 0) return 0;
   const order = ninjaRevealOrder(seed);
-  const frac = NINJA_REVEAL_FRACTIONS[Math.min(rankIndex, NINJA_REVEAL_FRACTIONS.length - 1)] ?? 1;
+  const frac =
+    NINJA_REVEAL_FRACTIONS[Math.min(rankIndex, NINJA_REVEAL_FRACTIONS.length - 1)] ?? 1;
   return Math.round(order.length * frac);
 }
 
@@ -89,7 +103,17 @@ export function ninjaVoidsForRank(
 }
 
 export function isNinjaLevel(level?: string): level is NinjaCardName {
-  return !!level && (NINJA_CARD_ORDER as readonly string[]).includes(level);
+  return revealRank("ninja", level) >= 0;
+}
+
+/** Ladder id shared by both levels, if they are on the same progressive reveal ladder. */
+export function sharedRevealLadder(a?: string, b?: string): string | undefined {
+  if (!a || !b) return undefined;
+  for (const [id, order] of Object.entries(REVEAL_LADDERS)) {
+    const list = order as readonly string[];
+    if (list.includes(a) && list.includes(b)) return id;
+  }
+  return undefined;
 }
 
 /** Precomputed void masks per Ninja rank name. */

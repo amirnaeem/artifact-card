@@ -82,9 +82,10 @@ Accent flicker is off by default (Reading chromatic levels only):
 />
 ```
 
-- `artSrc` — face art for ninja panel + mosaic tiles (defaults to packaged ninja art).
+- `artSrc` — enables an art face (mosaic tiles + panel). Art-face presets (Ninja) default to packaged art when omitted.
 - `markSrc` — replaces the asterisk on front and back.
 - `showMark={false}` — hides the **back** mark only.
+- Unknown `level` names work with `title` / `theme` / `artSrc` — behavior comes from resolved props, not a hardcoded name list.
 
 ### Vite
 
@@ -131,7 +132,7 @@ Assets resolve from the package via `import.meta.url` — you do **not** copy fi
 | `memberSince` | `string` | — | Back meta (skipped when empty) |
 | `brand` | `string` | `""` | Optional back brand line |
 | `showMark` | `boolean` | `true` | Show back mark (asterisk or `markSrc`) |
-| `artSrc` | `string` | packaged ninja art | Face art URL (ninja panel + mosaic) |
+| `artSrc` | `string` | packaged art for art-face presets | Face art URL; enables art mosaic/panel when set |
 | `markSrc` | `string` | — | Mark/logo URL (replaces asterisk on front + back) |
 | `side` | `"front" \| "back"` | — | Flat single face |
 | `mini` | `boolean` | `false` | Mosaic-only thumb |

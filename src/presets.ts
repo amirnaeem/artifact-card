@@ -108,13 +108,17 @@ const NINJA_META: Record<NinjaCardName, { caption: string; primary: string }> = 
 
 for (const name of NINJA_CARD_ORDER) {
   const meta = NINJA_META[name];
-  LEVEL_CARD_PRESETS[name] = preset(name, meta.caption, {
-    primary: meta.primary,
-    accents: [meta.primary],
-    titleColor: "#FEFEFE",
-    captionColor: "#A1A1AA",
-    grid: grid(NINJA_VOIDS[name], []),
-  });
+  LEVEL_CARD_PRESETS[name] = {
+    ...preset(name, meta.caption, {
+      primary: meta.primary,
+      accents: [meta.primary],
+      titleColor: "#FEFEFE",
+      captionColor: "#A1A1AA",
+      grid: grid(NINJA_VOIDS[name], []),
+    }),
+    artFace: true,
+    revealLadder: "ninja",
+  };
 }
 
 export const LEVEL_CARD_ORDER = [

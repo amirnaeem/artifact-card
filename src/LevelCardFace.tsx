@@ -1,14 +1,12 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { NINJA_ART_URL } from "./assets";
 import { ACCENT_FLICKER_MS, contentPad, stepAccentCells } from "./grid";
 import { assignRef, bufferPx } from "./lib/canvas";
 import { loadImage, onImageLoad } from "./load-image";
 import {
-  isNinjaLevel,
   NINJA_REVEAL_MS,
-  ninjaRankIndex,
   ninjaRevealedCount,
   ninjaVoidsForRevealed,
+  revealRank,
 } from "./ninja-voids";
 import {
   buildFaceModel,
@@ -16,6 +14,7 @@ import {
   paintFaceChrome,
   paintFaceMosaic,
 } from "./paint";
+import { getPreset } from "./presets";
 import type { AccentCell, LevelCardTheme } from "./types";
 
 type Props = {
@@ -23,6 +22,7 @@ type Props = {
   title: string;
   caption: string;
   level?: string;
+  /** Effective art URL when this is an art face. */
   artSrc?: string;
   markSrc?: string;
   /** Crop to mosaic; hide title / caption / mark. */
@@ -40,20 +40,22 @@ export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function Level
 ) {
   const mosaicRef = useRef<HTMLCanvasElement>(null);
   const chromeRef = useRef<HTMLCanvasElement>(null);
-  const prevNinjaReveal = useRef<number | null>(null);
+  const prevReveal = useRef<{ ladder?: string; rank: number } | null>(null);
 
   useEffect(() => {
     const mosaic = mosaicRef.current;
     if (!mosaic) return;
     let cancelled = false;
-    const fills = flicker ? flickerFillsFor(theme, level) : null;
+    const artFace = !!artSrc;
+    const ladder = getPreset(level)?.revealLadder;
+    const rank = ladder ? revealRank(ladder, level) : -1;
+    const fills = flicker && !artFace ? flickerFillsFor(theme, level) : null;
     const { contentCols } = contentPad(theme.grid);
     let accents: AccentCell[] | undefined = fills
       ? stepAccentCells(fills, theme.grid.voidCells, contentCols, theme.grid.rows)
       : undefined;
 
-    const resolvedArt = isNinjaLevel(level) ? artSrc ?? NINJA_ART_URL : undefined;
-    const paintOpts = { mini, fit: !mini, artSrc: resolvedArt, markSrc };
+    const paintOpts = { mini, fit: !mini, artSrc, artFace, markSrc };
     const chromeModel = mini
       ? null
       : buildFaceModel(theme, title, caption, level, { flat: true });
@@ -88,10 +90,21 @@ export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function Level
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let raf = 0;
-    if (isNinjaLevel(level) && !reduce) {
-      const to = ninjaRevealedCount(ninjaRankIndex(level));
-      const from = prevNinjaReveal.current ?? 0;
-      prevNinjaReveal.current = to;
+    const prev = prevReveal.current;
+    const canTween =
+      artFace &&
+      !!ladder &&
+      rank >= 0 &&
+      !!prev &&
+      prev.ladder === ladder &&
+      prev.rank >= 0 &&
+      prev.rank !== rank &&
+      !reduce;
+
+    if (canTween) {
+      const to = ninjaRevealedCount(rank);
+      const from = ninjaRevealedCount(prev!.rank);
+      prevReveal.current = { ladder, rank };
       if (from === to) {
         paintMosaic();
       } else {
@@ -107,27 +120,19 @@ export const LevelCardFace = forwardRef<HTMLCanvasElement, Props>(function Level
         raf = requestAnimationFrame(tick);
       }
     } else {
-      if (isNinjaLevel(level)) {
-        prevNinjaReveal.current = ninjaRevealedCount(ninjaRankIndex(level));
-      } else {
-        prevNinjaReveal.current = null;
-      }
+      prevReveal.current = artFace && ladder && rank >= 0 ? { ladder, rank } : null;
       paintMosaic();
     }
 
     const unsubs: Array<() => void> = [];
-    if (resolvedArt) {
-      unsubs.push(onImageLoad(resolvedArt, () => paintMosaic()));
-      void loadImage(resolvedArt)
+    if (artSrc) {
+      unsubs.push(onImageLoad(artSrc, () => paintMosaic()));
+      void loadImage(artSrc)
         .then(() => paintMosaic())
         .catch(() => {});
     }
     if (markSrc) {
-      unsubs.push(
-        onImageLoad(markSrc, () => {
-          paintChrome();
-        }),
-      );
+      unsubs.push(onImageLoad(markSrc, () => paintChrome()));
       void loadImage(markSrc)
         .then(() => paintChrome())
         .catch(() => {});

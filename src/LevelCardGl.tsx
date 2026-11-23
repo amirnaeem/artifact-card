@@ -6,16 +6,15 @@ import {
   wantsDeviceTilt,
 } from "./lib/device-tilt";
 import { CrosshairIcon, FlipIcon, PhoneIcon } from "./ActionIcons";
-import { CARD_GLTF_URL, NINJA_ART_URL } from "./assets";
+import { CARD_GLTF_URL } from "./assets";
 import { ACCENT_FLICKER_MS, contentPad, stepAccentCells } from "./grid";
 import { LevelCardFace } from "./LevelCardFace";
 import { isSafeAssetUrl, loadImage } from "./load-image";
 import {
-  isNinjaLevel,
   NINJA_REVEAL_MS,
-  ninjaRankIndex,
   ninjaRevealedCount,
   ninjaVoidsForRevealed,
+  sharedRevealLadder,
 } from "./ninja-voids";
 import {
   buildFaceModel,
@@ -28,11 +27,6 @@ import {
 import { resolveCard } from "./resolve";
 import type { LevelCardProps } from "./types";
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-function resolvedArtSrc(artSrc?: string): string {
-  const url = artSrc ?? NINJA_ART_URL;
-  return isSafeAssetUrl(url) ? url : NINJA_ART_URL;
-}
 
 /** Hairline lifts above glass — embossed metal, not floating decks. */
 const LAYER_PANEL_WORLD = 0.0045;
@@ -268,36 +262,40 @@ export function LevelCardGl(props: LevelCardProps) {
         level: string;
       } | null = null;
 
-      const applyNinjaDeck = (ninja: boolean) => {
+      const applyArtDeck = (artFace: boolean) => {
         if (mosaicDeck) {
           const mat = mosaicDeck.material as import("three").MeshStandardMaterial;
-          mat.transparent = ninja;
+          mat.transparent = artFace;
           mat.depthWrite = true;
-          mat.alphaTest = ninja ? 0.08 : 0;
+          mat.alphaTest = artFace ? 0.08 : 0;
           mat.needsUpdate = true;
         }
-        if (ninjaPanel) ninjaPanel.visible = ninja;
+        if (ninjaPanel) ninjaPanel.visible = artFace;
       };
 
       const paintFrontMosaic = (level: string, voidCells?: Array<[number, number]>) => {
         const r = resolveCard({ ...latest.current, level });
-        const fills = flickerRef.current ? flickerFillsFor(r.theme, level) : null;
+        const fills =
+          flickerRef.current && !r.artFace ? flickerFillsFor(r.theme, level) : null;
         const { contentCols } = contentPad(r.theme.grid);
         const accentCells = fills
           ? stepAccentCells(fills, r.theme.grid.voidCells, contentCols, r.theme.grid.rows)
           : undefined;
-        const ninja = isNinjaLevel(level);
-        const artSrc = ninja ? resolvedArtSrc(r.artSrc) : undefined;
         paintFaceMosaic(
           mosaicCanvas,
           buildFaceModel(r.theme, r.title, r.caption, level, {
             accentCells,
             voidCells,
           }),
-          { panelReveal: ninja, voidCells, artSrc },
+          {
+            panelReveal: r.artFace,
+            voidCells,
+            artSrc: r.artSrc,
+            artFace: r.artFace,
+          },
         );
         mosaicTex.needsUpdate = true;
-        applyNinjaDeck(ninja);
+        applyArtDeck(r.artFace);
       };
 
       const paintFrontChrome = (level: string) => {
@@ -315,16 +313,29 @@ export function LevelCardGl(props: LevelCardProps) {
         paintFrontChrome(level);
       };
 
-      const startNinjaReveal = (fromLevel: string | null, toLevel: string) => {
-        const toIdx = ninjaRankIndex(toLevel);
-        const to = ninjaRevealedCount(toIdx);
-        const from =
-          fromLevel && isNinjaLevel(fromLevel)
-            ? ninjaRevealedCount(ninjaRankIndex(fromLevel))
-            : 0;
+      const startArtReveal = (fromLevel: string | null, toLevel: string) => {
+        const toCard = resolveCard({ ...latest.current, level: toLevel });
+        const fromCard = fromLevel
+          ? resolveCard({ ...latest.current, level: fromLevel })
+          : null;
+        const ladder =
+          toCard.revealLadder &&
+          fromCard &&
+          sharedRevealLadder(fromLevel ?? undefined, toLevel)
+            ? toCard.revealLadder
+            : undefined;
         currentLevel = toLevel;
         paintFrontChrome(toLevel);
-        applyNinjaDeck(true);
+        applyArtDeck(toCard.artFace);
+        if (!toCard.artFace || !ladder || toCard.revealRank < 0) {
+          paintFrontMosaic(toLevel);
+          return;
+        }
+        const to = ninjaRevealedCount(toCard.revealRank);
+        const from =
+          fromCard && fromCard.revealLadder === ladder && fromCard.revealRank >= 0
+            ? ninjaRevealedCount(fromCard.revealRank)
+            : 0;
         if (reduce || from === to) {
           paintFrontMosaic(toLevel);
           return;
@@ -439,7 +450,7 @@ export function LevelCardGl(props: LevelCardProps) {
             mat.map?.dispose();
             mat.map = map;
             mat.needsUpdate = true;
-            ninjaPanel.visible = isNinjaLevel(currentLevel);
+            ninjaPanel.visible = resolveCard({ ...latest.current, level: currentLevel }).artFace;
             return;
           }
           const n = faceOutward(faces.front);
@@ -461,22 +472,23 @@ export function LevelCardGl(props: LevelCardProps) {
           panel.quaternion.copy(faces.front.quaternion);
           panel.scale.copy(faces.front.scale);
           panel.renderOrder = 1;
-          panel.visible = isNinjaLevel(currentLevel);
+          panel.visible = resolveCard({ ...latest.current, level: currentLevel }).artFace;
           faces.front.parent?.add(panel);
           raised.push(panel);
           ninjaPanel = panel;
         };
 
         const loadPanelArt = (artSrc?: string) => {
-          const url = resolvedArtSrc(artSrc);
-          if (!isSafeAssetUrl(url)) return;
+          const r = resolveCard({ ...latest.current, level: currentLevel, artSrc });
+          const url = r.artSrc;
+          if (!url || !isSafeAssetUrl(url)) return;
           void new THREE.TextureLoader().loadAsync(url).then((map) => {
             if (disposed) {
               map.dispose();
               return;
             }
             applyPanelMap(map);
-            if (isNinjaLevel(currentLevel)) {
+            if (r.artFace) {
               paintFrontMosaic(currentLevel);
               wake();
             }
@@ -520,7 +532,8 @@ export function LevelCardGl(props: LevelCardProps) {
 
       api.current = {
         setLevel: (name, spin) => {
-          if (isNinjaLevel(name)) startNinjaReveal(currentLevel, name);
+          const next = resolveCard({ ...latest.current, level: name });
+          if (next.artFace && next.revealLadder) startArtReveal(currentLevel, name);
           else paintFrontNow(name);
           if (spin && !reduce) {
             pendingLevel = name;

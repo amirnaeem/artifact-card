@@ -2,16 +2,15 @@
 
 import { buildCells, contentPad, gridMetrics, scatterFillsInContent } from "./grid";
 import { getImage } from "./load-image";
-import { isNinjaLevel } from "./ninja-voids";
-import { BEGINNER_COLOR_FILLS } from "./presets";
+import { BEGINNER_COLOR_FILLS, getPreset } from "./presets";
 import type { AccentCell, GridCell, GridSpec, LevelCardTheme } from "./types";
 
-/** Chromatic levels only — Sage/Oracle/Ninja stay static. */
+/** Chromatic color mosaics only — art faces / body maps stay static. */
 export function flickerFillsFor(
   theme: LevelCardTheme,
   level?: string,
 ): string[] | null {
-  if (isNinjaLevel(level)) return null;
+  if (getPreset(level)?.artFace) return null;
   if (theme.grid.bodyCells?.length) return null;
   if (level === "Beginner") return BEGINNER_COLOR_FILLS;
   const fills = theme.grid.accentCells
@@ -88,8 +87,10 @@ export type FacePaintOpts = {
   panelReveal?: boolean;
   /** Override theme voids (Ninja reveal tweens). */
   voidCells?: Array<[number, number]>;
-  /** Face art URL (ninja mosaic tiles). */
+  /** Face art URL (art mosaic tiles). */
   artSrc?: string;
+  /** When true, paint art into tiles (or panel-reveal covers). */
+  artFace?: boolean;
   /** Mark/logo URL; replaces the default asterisk. */
   markSrc?: string;
 };
@@ -375,8 +376,7 @@ export function paintFaceMosaic(
   }
 
   const artUrl = opts?.artSrc;
-  const art =
-    isNinjaLevel(model.level) && !panelReveal && artUrl ? getImage(artUrl) : null;
+  const art = opts?.artFace && !panelReveal && artUrl ? getImage(artUrl) : null;
   const bounds = art && model.cells.length ? mosaicBounds(model.cells) : null;
 
   const baseGrid =

@@ -66,6 +66,16 @@ export type LevelCardPreset = {
   name: string;
   caption: string;
   theme: Partial<LevelCardTheme>;
+  /**
+   * Paint face art into mosaic tiles / under-panel gaps.
+   * Also enabled when the host passes `artSrc`.
+   */
+  artFace?: boolean;
+  /**
+   * Progressive mosaic reveal ladder id (e.g. `"ninja"`).
+   * Rank changes within the same ladder animate void fill-in.
+   */
+  revealLadder?: string;
 };
 
 export type LevelCardProps = {
@@ -79,7 +89,7 @@ export type LevelCardProps = {
   brand?: string;
   /** Show the back mark (asterisk or `markSrc`). Default true. */
   showMark?: boolean;
-  /** Face art URL (ninja panel + mosaic). Default: packaged ninja art for ninja levels. */
+  /** Face art URL. Enables art face when set; art-face presets default to packaged art. */
   artSrc?: string;
   /** Mark/logo URL; replaces the default asterisk on front + back. */
   markSrc?: string;
